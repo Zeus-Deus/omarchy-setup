@@ -1,3 +1,3 @@
 # ~/.config/hypr/bindings.conf
 
-These are my edited shorotcuts
+These are my edited shortcuts
