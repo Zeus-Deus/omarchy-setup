@@ -14,8 +14,8 @@ Cause
 What this change does
 
 - Switches from ratio-based thresholds to fixed byte thresholds so the kernel does smaller, more frequent flushes:
-  - `vm.dirty_background_bytes = 4194304` (4 MiB)
-  - `vm.dirty_bytes = 4194304` (4 MiB)
+  - `vm.dirty_background_bytes = 134217728` (128 MB)
+  - `vm.dirty_bytes = 268435456` (256 MB)
 
 How to apply (recommended)
 
@@ -33,8 +33,8 @@ How to apply (manual)
 ```bash
 sudo tee /etc/sysctl.d/99-dirty-bytes.conf > /dev/null << 'EOF'
 # Prevent large blocking dirty-page flushes during heavy disk I/O
-vm.dirty_background_bytes = 4194304
-vm.dirty_bytes = 4194304
+vm.dirty_background_bytes = 134217728
+vm.dirty_bytes = 268435456
 EOF
 
 sudo sysctl -p /etc/sysctl.d/99-dirty-bytes.conf
@@ -64,7 +64,7 @@ File created by the script
 Before vs after (example)
 
 - Before: `vm.dirty_background_ratio=10`, `vm.dirty_ratio=20` (percent of RAM — can be many GB)
-- After: fixed byte limits of ~4 MiB for both background and hard thresholds
+- After: fixed byte limits of ~128 MB (background) and ~256 MB (hard) instead of multi-GB percent-based thresholds
 
 Reference
 
