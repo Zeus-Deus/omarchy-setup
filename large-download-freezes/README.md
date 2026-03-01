@@ -69,3 +69,42 @@ Before vs after (example)
 Reference
 
 - Arch Wiki: https://wiki.archlinux.org/title/sysctl#Small_periodic_system_freezes
+
+## Part 2: Fixing Lag Caused by BTRFS Copy-on-Write (The "Lingering Lag" Fix)
+
+Even after fixing the RAM cache issues above, you may still experience heavy lag, CPU usage, and high disk I/O when downloading Steam games or massive torrents.
+
+### The Cause (BTRFS CoW & Snapper)
+
+Linux uses the **Btrfs** file system, which utilizes **Copy-on-Write (CoW)**. When an app updates a file, Btrfs writes the new data to a new location on the disk rather than overwriting it. 
+
+When you download a 100GB Steam game, Steam downloads compressed chunks randomly and constantly overwrites the file. Btrfs CoW scatters these updates into hundreds of thousands of microscopic fragments across your disk. Furthermore, Btrfs tries to compress these already-compressed chunks in real-time. This combination absolutely chokes your CPU and SSD.
+
+### The Fix
+
+We must disable CoW (`+C` attribute) and compression specifically for heavy download folders like `~/Downloads`, `~/.local/share/Steam/steamapps`, and AI tools like `~/comfyui`.
+
+**The Snapper Catch:** Because you use Snapper for system backups, if Snapper takes a snapshot of a folder with CoW disabled, Btrfs will immediately force CoW to turn back *on* for that folder to preserve the snapshot state. This instantly brings the lag back. 
+To permanently fix this, we must convert the Steam and Downloads folders into **Btrfs Subvolumes**. Snapper ignores subvolumes completely, meaning your games won't bloat your system backups, and the NOCOW fix will remain permanent forever.
+
+### How to Apply
+
+A script has been provided to automatically convert your `Downloads`  `steamapps`, and `comfyui` folders into subvolumes, apply the `+C` (No Copy-on-Write) attribute, and safely move your data over.
+
+1. **Close Steam** and **ComfyUI** completely.
+2. Close your web browsers (Firefox, Chrome, Brave, etc.) so nothing is writing to the Downloads folder.
+3. Run the script:
+   ```bash
+   ./btrfs-nocow-fix.sh
+   ```
+
+*(Note: Depending on how many games you have installed, copying the data to the new subvolume can take a long time. Please be patient.)*
+
+### Cleanup
+The script renames your original folders to `Downloads_old`  `steamapps_old`, and `comfyui_old` to keep your data safe during the transfer. Once the script finishes and you verify your games and downloads are intact, you can safely delete the `_old` folders to reclaim your disk space.
+
+```bash
+rm -rf ~/Downloads_old
+rm -rf ~/.local/share/Steam/steamapps_old
+rm -rf ~/comfyui_old
+```
