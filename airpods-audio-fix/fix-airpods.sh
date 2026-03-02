@@ -10,7 +10,8 @@ echo "Applying AirPods / Bluetooth Audio Fixes..."
 # This prevents WirePlumber from switching to the low-quality HSP/HFP profile
 # when a microphone is requested, keeping it on high-quality A2DP.
 echo "-> Disabling Bluetooth auto-switch to headset profile..."
-wpctl settings --save bluetooth.autoswitch-to-headset-profile false
+wpctl settings bluetooth.autoswitch-to-headset-profile false
+wpctl settings --save bluetooth.autoswitch-to-headset-profile
 
 # 2. Disable Bluetooth audio node suspension
 # This prevents the audio stream from "sleeping" after 5 seconds of silence,
