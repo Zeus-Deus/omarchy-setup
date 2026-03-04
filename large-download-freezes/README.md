@@ -26,110 +26,49 @@ chmod +x main.sh
 ./main.sh
 ```
 
-The script writes `/etc/sysctl.d/99-dirty-bytes.conf` and applies the settings with `sysctl`.
-
-How to apply (manual)
-
-```bash
-sudo tee /etc/sysctl.d/99-dirty-bytes.conf > /dev/null << 'EOF'
-# Prevent large blocking dirty-page flushes during heavy disk I/O
-vm.dirty_background_bytes = 134217728
-vm.dirty_bytes = 268435456
-EOF
-
-sudo sysctl -p /etc/sysctl.d/99-dirty-bytes.conf
-```
-
-How to undo / revert
-
-- Remove the file and reload sysctl settings:
-
-```bash
-sudo rm /etc/sysctl.d/99-dirty-bytes.conf
-sudo sysctl -p
-```
-
-- Or comment out the two lines inside `/etc/sysctl.d/99-dirty-bytes.conf` and run:
-
-```bash
-sudo sysctl -p /etc/sysctl.d/99-dirty-bytes.conf
-```
-
-- Rebooting (after removing the file) will also restore kernel defaults.
-
-File created by the script
-
-- `/etc/sysctl.d/99-dirty-bytes.conf`
-
-Before vs after (example)
-
-- Before: `vm.dirty_background_ratio=10`, `vm.dirty_ratio=20` (percent of RAM — can be many GB)
-- After: fixed byte limits of ~128 MB (background) and ~256 MB (hard) instead of multi-GB percent-based thresholds
-
-Reference
-
-- Arch Wiki: https://wiki.archlinux.org/title/sysctl#Small_periodic_system_freezes
-
 ## Part 2: Fixing Lag Caused by BTRFS Copy-on-Write (The "Lingering Lag" Fix)
 
-Even after fixing the RAM cache issues above, you may still experience heavy lag, CPU usage, and high disk I/O when downloading Steam games or massive torrents.
+Linux uses the **Btrfs** file system, which utilizes **Copy-on-Write (CoW)**. When an app updates a file, Btrfs writes the new data to a new location on the disk rather than overwriting it.
 
-### The Cause (BTRFS CoW & Snapper)
+When you download massive files (like large ComfyUI models or Steam Games), this scattered writing process alongside compression absolutely chokes your CPU and SSD. We can fix this by applying the NOCOW (`+C`) attribute to those directories.
 
-Linux uses the **Btrfs** file system, which utilizes **Copy-on-Write (CoW)**. When an app updates a file, Btrfs writes the new data to a new location on the disk rather than overwriting it. 
+### How to Apply NOCOW to Downloads & ComfyUI
 
-When you download a 100GB Steam game, Steam downloads compressed chunks randomly and constantly overwrites the file. Btrfs CoW scatters these updates into hundreds of thousands of microscopic fragments across your disk. Furthermore, Btrfs tries to compress these already-compressed chunks in real-time. This combination absolutely chokes your CPU and SSD.
+A script has been provided to automatically convert your `Downloads` and `comfyui` folders into subvolumes, apply the `+C` (No Copy-on-Write) attribute, and safely move your data over.
 
-### The Fix
-
-We must disable CoW (`+C` attribute) and compression for heavy download folders. Instead of converting individual subfolders, we convert the **ENTIRE parent folder** into a Btrfs Subvolume:
-
-- `~/Downloads` - entire folder (all downloads go here directly)
-- `~/.local/share/Steam` - **ENTIRE Steam folder**, not just steamapps!
-- `~/comfyui` - entire folder
-
-**Why convert the ENTIRE Steam folder?** Steam creates many subfolders:
-- `steamapps/` - games
-- `depotcache/` - downloaded depot files
-- `package/` - Steam package updates
-- `downloading/` - active downloads
-- `temp/` - temporary files
-- `shadercache/` - shader cache
-- And more...
-
-If we only convert `steamapps`, the other folders still have CoW enabled and will cause lag. By converting the ENTIRE `~/.local/share/Steam` folder, ALL current and FUTURE folders Steam creates will automatically be excluded from Snapper AND have NOCOW applied.
-
-**The Snapper Catch:** Because you use Snapper for system backups, if Snapper takes a snapshot of a folder with CoW disabled, Btrfs will immediately force CoW to turn back *on* for that folder to preserve the snapshot state. This instantly brings the lag back. 
-To permanently fix this, we must convert the Steam and Downloads folders into **Btrfs Subvolumes**. Snapper ignores subvolumes completely, meaning your games won't bloat your system backups, and the NOCOW fix will remain permanent forever.
-
-### How to Apply
-
-A script has been provided to automatically convert your `Downloads`, `Steam` (entire folder), and `comfyui` folders into subvolumes, apply the `+C` (No Copy-on-Write) attribute, and safely move your data over.
-
-1. **Close Steam** and **ComfyUI** completely.
-2. Close your web browsers (Firefox, Chrome, Brave, etc.) so nothing is writing to the Downloads folder.
+1. **Close ComfyUI** completely.
+2. Close your web browsers so nothing is writing to the Downloads folder.
 3. Run the script:
    ```bash
    ./btrfs-nocow-fix.sh
    ```
 
-*(Note: Depending on how many games you have installed, copying the data to the new subvolume can take a long time. Please be patient.)*
+### ⚠️ IMPORTANT: Why Steam requires a different approach ⚠️
 
-### Important: Why This Prevents Future Issues
+Applying the NOCOW (`+C`) flag directly to your default `~/.local/share/Steam` library is fundamentally incompatible with Proton and Wine.
+If Proton runtime folders, wine prefixes (`compatdata/`), or game executables (`.exe`/`.dll`) receive the NOCOW flag, the specific memory mapping that Wine relies on breaks, and **games will instantly crash or fail to launch with an "Exec format error"**.
 
-By converting the **entire** `~/.local/share/Steam` folder (not just `steamapps`), this fix is **future-proof**:
-- Steam may add new folders in the future for new features
-- These new folders will automatically be inside the subvolume
-- They will automatically have NOCOW applied and be excluded from Snapper
-- You won't need to run this script again for new Steam folders
+**How does Steam handle multiple directories?**
+Steam has a fantastic built-in multi-library system. When you create a secondary game library, Steam is smart enough to know the difference between "Games" and "Tools". 
+Even if you tell Steam to install a game into your secondary library, **Steam will automatically force tools like Proton, Steam Linux Runtime, and Shader Caches to stay in the default `~/.local/share/Steam` library.** 
+This behavior is exactly what we want! It allows Proton to run perfectly safely with standard Copy-on-Write, while your 100GB game files enjoy lag-free NOCOW downloads.
 
-The same applies to `~/Downloads` and `~/comfyui` - they are simple folders with no subdirectories, so converting the root folder covers everything.
+### How to safely use NOCOW for Steam Games
 
-### Cleanup
-The script renames your original folders to `Downloads_old`, `Steam_old`, and `comfyui_old` to keep your data safe during the transfer. Once the script finishes and you verify your games and downloads are intact, you can safely delete the `_old` folders to reclaim your disk space.
+Run the dedicated Steam Games script to create a safe, NOCOW-enabled `~/Games` directory:
 
 ```bash
-rm -rf ~/Downloads_old
-rm -rf ~/.local/share/Steam_old
-rm -rf ~/comfyui_old
+./btrfs-nocow-steam-games.sh
 ```
+
+**Does it matter if Steam is installed yet?**
+No! You can run this script on a fresh Omarchy install before Steam is even downloaded. It just creates a normal folder on your system and flags it with NOCOW. You can also run it on an old system that already has games installed.
+
+**After running the script:**
+1. Open Steam.
+2. Go to **Settings > Storage > Add Drive**.
+3. Select the `~/Games` folder.
+4. **For new games:** When you click install on a massive game, select the `~/Games` drive from the dropdown. 
+5. **For existing games:** Go to Settings > Storage, check the box next to your heavy game (like God of War), and click **Move** to transfer it to the `~/Games` drive.
+
+*Note: You can also use this `~/Games` folder for Lutris, Heroic Games Launcher, Epic Games, or any other massive files you want to download without system lag!*
