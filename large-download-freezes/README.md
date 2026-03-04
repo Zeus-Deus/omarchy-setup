@@ -82,14 +82,29 @@ When you download a 100GB Steam game, Steam downloads compressed chunks randomly
 
 ### The Fix
 
-We must disable CoW (`+C` attribute) and compression specifically for heavy download folders like `~/Downloads`, `~/.local/share/Steam/steamapps`, and AI tools like `~/comfyui`.
+We must disable CoW (`+C` attribute) and compression for heavy download folders. Instead of converting individual subfolders, we convert the **ENTIRE parent folder** into a Btrfs Subvolume:
+
+- `~/Downloads` - entire folder (all downloads go here directly)
+- `~/.local/share/Steam` - **ENTIRE Steam folder**, not just steamapps!
+- `~/comfyui` - entire folder
+
+**Why convert the ENTIRE Steam folder?** Steam creates many subfolders:
+- `steamapps/` - games
+- `depotcache/` - downloaded depot files
+- `package/` - Steam package updates
+- `downloading/` - active downloads
+- `temp/` - temporary files
+- `shadercache/` - shader cache
+- And more...
+
+If we only convert `steamapps`, the other folders still have CoW enabled and will cause lag. By converting the ENTIRE `~/.local/share/Steam` folder, ALL current and FUTURE folders Steam creates will automatically be excluded from Snapper AND have NOCOW applied.
 
 **The Snapper Catch:** Because you use Snapper for system backups, if Snapper takes a snapshot of a folder with CoW disabled, Btrfs will immediately force CoW to turn back *on* for that folder to preserve the snapshot state. This instantly brings the lag back. 
 To permanently fix this, we must convert the Steam and Downloads folders into **Btrfs Subvolumes**. Snapper ignores subvolumes completely, meaning your games won't bloat your system backups, and the NOCOW fix will remain permanent forever.
 
 ### How to Apply
 
-A script has been provided to automatically convert your `Downloads`  `steamapps`, and `comfyui` folders into subvolumes, apply the `+C` (No Copy-on-Write) attribute, and safely move your data over.
+A script has been provided to automatically convert your `Downloads`, `Steam` (entire folder), and `comfyui` folders into subvolumes, apply the `+C` (No Copy-on-Write) attribute, and safely move your data over.
 
 1. **Close Steam** and **ComfyUI** completely.
 2. Close your web browsers (Firefox, Chrome, Brave, etc.) so nothing is writing to the Downloads folder.
@@ -100,11 +115,21 @@ A script has been provided to automatically convert your `Downloads`  `steamapps
 
 *(Note: Depending on how many games you have installed, copying the data to the new subvolume can take a long time. Please be patient.)*
 
+### Important: Why This Prevents Future Issues
+
+By converting the **entire** `~/.local/share/Steam` folder (not just `steamapps`), this fix is **future-proof**:
+- Steam may add new folders in the future for new features
+- These new folders will automatically be inside the subvolume
+- They will automatically have NOCOW applied and be excluded from Snapper
+- You won't need to run this script again for new Steam folders
+
+The same applies to `~/Downloads` and `~/comfyui` - they are simple folders with no subdirectories, so converting the root folder covers everything.
+
 ### Cleanup
-The script renames your original folders to `Downloads_old`  `steamapps_old`, and `comfyui_old` to keep your data safe during the transfer. Once the script finishes and you verify your games and downloads are intact, you can safely delete the `_old` folders to reclaim your disk space.
+The script renames your original folders to `Downloads_old`, `Steam_old`, and `comfyui_old` to keep your data safe during the transfer. Once the script finishes and you verify your games and downloads are intact, you can safely delete the `_old` folders to reclaim your disk space.
 
 ```bash
 rm -rf ~/Downloads_old
-rm -rf ~/.local/share/Steam/steamapps_old
+rm -rf ~/.local/share/Steam_old
 rm -rf ~/comfyui_old
 ```
