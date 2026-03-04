@@ -50,8 +50,8 @@ If Proton runtime folders, wine prefixes (`compatdata/`), or game executables (`
 
 **How does Steam handle multiple directories?**
 Steam has a fantastic built-in multi-library system. When you create a secondary game library, Steam is smart enough to know the difference between "Games" and "Tools". 
-Even if you tell Steam to install a game into your secondary library, **Steam will automatically force tools like Proton, Steam Linux Runtime, and Shader Caches to stay in the default `~/.local/share/Steam` library.** 
-This behavior is exactly what we want! It allows Proton to run perfectly safely with standard Copy-on-Write, while your 100GB game files enjoy lag-free NOCOW downloads.
+Even if you tell Steam to make your secondary library the default for new installations, **Steam will automatically force tools like Proton, Steam Linux Runtime, and Shader Caches to stay in the primary `~/.local/share/Steam` library.** 
+This behavior is exactly what we want! It allows Proton to run perfectly safely with standard Copy-on-Write, while your massive game files enjoy lag-free NOCOW downloads.
 
 ### How to safely use NOCOW for Steam Games
 
@@ -68,7 +68,7 @@ No! You can run this script on a fresh Omarchy install before Steam is even down
 1. Open Steam.
 2. Go to **Settings > Storage > Add Drive**.
 3. Select the `~/Games` folder.
-4. **For new games:** When you click install on a massive game, select the `~/Games` drive from the dropdown. 
-5. **For existing games:** Go to Settings > Storage, check the box next to your heavy game (like God of War), and click **Move** to transfer it to the `~/Games` drive.
+4. **Make it default for future games:** Select the `~/Games` drive from the dropdown, click the **`...`** (three dots) button on the right, and choose **"Make Default"**. Every new game you download will automatically go here and be lag-free.
+5. **For existing games:** Select your old drive from the dropdown, check the box next to your heavy game (like God of War), and click **Move** to transfer it to the `~/Games` drive.
 
 *Note: You can also use this `~/Games` folder for Lutris, Heroic Games Launcher, Epic Games, or any other massive files you want to download without system lag!*
