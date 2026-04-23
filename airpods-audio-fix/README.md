@@ -1,87 +1,95 @@
-# Apple AirPods Always-On Audio + Mic Fix
+# AirPods Audio + Mic Fix (Linux / Arch / Omarchy)
 
-This directory contains the setup I use on Omarchy to make AirPods work like a regular always-available Bluetooth headset.
+A one-shot setup that makes AirPods behave the way they do on macOS:
 
-The goal is simple:
+- **High-fidelity stereo (A2DP AAC) by default.**
+- **Microphone is always visible to apps** - Discord, Voxtype, browsers, OBS - even while A2DP is active.
+- **Automatic profile switch to HFP when recording**, with Apple's LC3-24kHz voice codec if negotiated, else mSBC (16 kHz).
+- **Automatic switch back to A2DP AAC when recording ends**, so music quality comes straight back.
 
-- keep the Bluetooth connection stable
-- keep the AirPods microphone visible to apps
-- keep audio playback and mic working without needing extra mode-switch commands
+No manual profile switching. No permanent audio quality hit. No broken microphone in Discord.
 
-## The problem this fixes
-
-On this setup, AirPods had two separate issues:
-
-1. Bluetooth playback could wake up badly after silence, causing left-ear-only playback or dropped audio.
-2. The microphone was only available when PipeWire switched the AirPods into headset mode, which meant some apps could fail to detect the mic at all.
-
-## The default fix
-
-Run this once:
+## Run it
 
 ```bash
 ./fix-airpods.sh
 ```
 
-That does all of the following:
+That's the whole setup. Safe to rerun.
 
-- disables Bluetooth output suspension so the earlier AirPods sync and reconnect issue stays fixed
-- saves `bluetooth.autoswitch-to-headset-profile=false`
-- installs and enables a user service that puts the AirPods back into headset mode whenever they connect
-- sets the AirPods as the default Bluetooth sink and source when they are connected
-- raises the AirPods headset mic gain to `150%`, because the raw mic level is very quiet on this setup
+## Prerequisites
 
-The result is:
+The script checks for these automatically:
 
-- AirPods stay in audio + mic mode by default
-- apps like Discord can detect the mic more reliably because it already exists
-- the earlier Bluetooth stability fix is still preserved
+- `pipewire` >= 1.5.81  (adds Apple's LC3-24kHz HFP codec)
+- `wireplumber` >= 0.5.14  (always-on virtual mic loopback)
+- `bluez` >= 5.84
+- `libfdk-aac` (AAC A2DP playback)
+- `liblc3` (LC3 HFP voice codec)
 
-## Why this mode is the default
-
-Classic Bluetooth normally has a tradeoff:
-
-- `A2DP` = better music quality, usually no normal mic source
-- `HFP/HSP` = audio + mic together, but lower playback quality
-
-For this setup, the default priority is to make AirPods just work without thinking about profile switching.
-
-So this fix keeps the AirPods in headset mode by default.
-
-If you temporarily want the best playback quality, you can still change the AirPods profile manually in Omarchy's audio Configuration tab. That manual change is temporary. After the AirPods reconnect, the default headset behavior will return.
+On Arch / Omarchy these are all in the stock `pipewire` / `wireplumber` package set and will already be installed by default.
 
 ## What gets installed
 
-The setup script writes this WirePlumber override:
+Two WirePlumber drop-ins in `~/.config/wireplumber/wireplumber.conf.d/`:
 
-- `~/.config/wireplumber/wireplumber.conf.d/51-disable-bluetooth-suspension.conf`
+- `51-disable-bluetooth-suspension.conf` - keeps Bluetooth nodes awake so reconnects don't produce left-ear-only or stutter.
+- `52-airpods-codec.conf` - codec preferences (LC3 > mSBC > CVSD for HFP, AAC VBR for A2DP) and `bluetooth.autoswitch-to-headset-profile = true`.
 
-It also installs this user service:
+And one `wpctl` setting is persisted:
 
-- `~/.config/systemd/user/airpods-headset-mode.service`
+- `bluetooth.autoswitch-to-headset-profile = true`
 
-That service runs the helper script in this repo:
+The script also removes any older `airpods-headset-mode.service` systemd user unit if it finds one (from earlier versions of this fix that forced HSP/HFP always on).
 
-- `airpods-audio-fix/airpods-headset-daemon.sh`
+## Why this approach
 
-The helper watches for AirPods reconnects and reapplies headset mode only when the AirPods connect again, so it does not keep fighting you every second while they are already connected.
+Classic Bluetooth only offers two modes:
 
-## Safe to rerun
+- **A2DP**: stereo, music-grade, *no mic*.
+- **HFP/HSP**: mono, low-quality, *has mic*.
 
-`./fix-airpods.sh` is safe to run again.
+There is no standardized way to get simultaneous high-quality stereo + mic over classic Bluetooth, and AirPods do not implement LE Audio / LC3-BAP, so the "just use LE Audio" path doesn't work for them. macOS and Windows do the exact same A2DP-to-HFP switch - they just hide it better.
 
-It always rewrites the same config file and the same user service file, then reloads and restarts the same user service.
+PipeWire 1.5.81 (Oct 2025) added Apple's proprietary **LC3-24kHz** codec for HFP, which is the same codec an iPhone uses. WirePlumber 0.5.14 (Feb 2026) added an **always-on virtual loopback source** so the mic shows up in every app's picker while the card stays in A2DP, and flips to HFP only when an app actually opens the stream. That combination is what this fix relies on.
 
-## Verifying it worked
+## Verify after running
 
-After running the fix, reconnect the AirPods once if they are already connected.
+```bash
+# Active codec on the AirPods card (re-run after reconnecting AirPods):
+pactl list cards | grep -A1 -i airpods | grep -i 'Active Profile'
+```
 
-You should then see the AirPods behave like this:
+- `headset-head-unit` -> **LC3-24kHz** (best, macOS-equivalent voice codec)
+- `headset-head-unit-msbc` -> **mSBC** at 16 kHz (good)
+- `headset-head-unit-cvsd` -> **CVSD** at 8 kHz (narrowband, sounds bad) - reconnect AirPods to re-negotiate
+- `a2dp-sink` -> **AAC** (high-fidelity playback, no mic active)
 
-- the microphone is already present in apps instead of only appearing after profile switching
-- the AirPods show headset mode in the audio Configuration view
-- audio playback and mic both work at the same time
+## Known caveats
 
-## Quick reference
+- **First ~200-1000 ms of speech may be clipped** when an app opens the mic, because the BlueZ A2DP-to-HFP SCO handshake takes that long. macOS has the same limit - it just feels less jarring there. For push-to-talk apps (Voxtype etc.), pre-opening the mic a fraction of a second before speech helps.
+- **Some apps cache the device list at startup.** If Discord doesn't see the AirPods mic, restart Discord after connecting. Firefox, Chromium, native apps, and Vesktop all re-enumerate correctly; Zoom is the worst offender.
+- **HFP voice is always lower quality than A2DP music.** That's a Bluetooth Classic limit, not a Linux bug. LC3-24kHz is close to macOS quality; mSBC is clearly worse; CVSD is unusable.
+- **If your BT adapter is Realtek**, mSBC may silently fall back to CVSD. Intel AX210/AX211 and MediaTek MT7922/MT7925 are reliable. Check with `dmesg | grep -i voice_setting` - `0x0003` means mSBC-ready.
 
-- `./fix-airpods.sh` - the only setup command you need for this AirPods fix
+## Mic too quiet?
+
+Bump the software source volume once per session:
+
+```bash
+wpctl set-volume $(wpctl status | awk '/Sources/,/Filters/{if($0 ~ /AirPods|bluez_input/) print $2}' | tr -d '.') 1.5
+```
+
+Or open `pavucontrol` -> Input Devices -> AirPods and drag the slider.
+
+## Rollback
+
+Restore the prior setup in one block:
+
+```bash
+rm ~/.config/wireplumber/wireplumber.conf.d/52-airpods-codec.conf
+wpctl settings --save bluetooth.autoswitch-to-headset-profile false
+systemctl --user restart wireplumber
+```
+
+(The `51-disable-bluetooth-suspension.conf` drop-in is independently useful and safe to keep.)
