@@ -1,4 +1,8 @@
-You **absolutely need** `nvidia-container-toolkit` for Docker containers to use your GPU on Arch Linux (including Omarchy). Since you've already configured your NVIDIA drivers and power management through the ASUS Linux setup, installing and configuring the container toolkit is the final step for GPU-accelerated Docker containers.
+# NVIDIA Docker setup
+
+> Optional setup. This is not run by the main installer.
+
+You need `nvidia-container-toolkit` for Docker containers to use an NVIDIA GPU on Arch Linux, including Omarchy.
 
 ## Installation
 

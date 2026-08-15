@@ -1,5 +1,7 @@
 # Limine Windows Chainload (Quick Setup)
 
+> Machine-specific troubleshooting reference. Do not run automatically.
+
 Add a Windows boot entry to the Limine bootloader without copying any Microsoft files. The script chainloads Windows directly from its own EFI System Partition (ESP) using the partition label.
 
 ## Requirements
@@ -19,9 +21,8 @@ lsblk -o NAME,FSTYPE,LABEL,FSAVAIL,FSUSE%,MOUNTPOINTS
 ## Quick start
 
 ```bash
-# Make the script executable and run it
-chmod +x ~/Documents/limine-dualboot/main.sh
-bash ~/Documents/limine-dualboot/main.sh
+# Run from the repository root
+./docs/troubleshooting/limine-dualboot/main.sh
 
 # Reboot and select "Windows" in the Limine menu
 ```
@@ -33,7 +34,7 @@ The script is idempotent: running it again won’t create duplicates.
 Default label is `SYSTEM`. Override when needed:
 
 ```bash
-WIN_ESP_LABEL="YOUR_LABEL" bash ~/Documents/limine-dualboot/main.sh
+WIN_ESP_LABEL="YOUR_LABEL" ./docs/troubleshooting/limine-dualboot/main.sh
 ```
 
 ## What the script does

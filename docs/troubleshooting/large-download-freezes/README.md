@@ -1,5 +1,7 @@
 # Omarchy: Large Download Freezes Fix
 
+> Troubleshooting reference. These scripts make system and filesystem changes and are never run automatically.
+
 This folder contains a collection of scripts to permanently fix short, periodic "Application Not Responding" dialogs, massive CPU spikes, and system freezes that occur during large downloads (like Steam games, ComfyUI models, or heavy torrents) on Linux/Btrfs systems.
 
 ## 🚀 How to apply everything at once (Recommended)

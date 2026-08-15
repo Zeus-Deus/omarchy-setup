@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Troubleshooting helper; not called by the main installer.
+
 # Fix: Small Periodic System Freezes During Downloads
 # This script applies the dirty bytes fix to prevent system freezes during heavy disk I/O
 

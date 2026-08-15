@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Troubleshooting helper; not called by the main installer.
+
 echo "=========================================="
 echo "Applying BTRFS NOCOW Fix for Downloads & ComfyUI"
 echo "=========================================="

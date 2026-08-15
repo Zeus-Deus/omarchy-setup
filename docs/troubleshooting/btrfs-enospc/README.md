@@ -1,5 +1,7 @@
 # Btrfs ENOSPC Recovery Guide
 
+> Troubleshooting reference. Do not run automatically.
+
 ## What Happened
 
 Btrfs filesystem ran out of **unallocated space** (~1MB left) and **metadata** was 90%+ full, even though `df -h` showed ~70GB free. During a system update, Btrfs couldn't allocate new metadata chunks and threw "No space left on device" errors, eventually forcing the filesystem read-only.

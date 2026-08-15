@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Troubleshooting helper; not called by the main installer.
+
 echo "=========================================="
 echo "Creating NOCOW Steam/Games Directory"
 echo "=========================================="

@@ -1,5 +1,7 @@
 # Installing Miniconda on Omarchy Linux
 
+> Optional setup. This is not run by the main installer.
+
 ## Installation
 
 Follow the official Miniconda installation instructions for Linux:

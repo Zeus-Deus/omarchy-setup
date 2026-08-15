@@ -1,5 +1,7 @@
 # Voxtype Setup - Voice-to-Text Dictation
 
+> Archived pre-Quattro guide. Current Omarchy provides Voxtype through Install > AI > Dictation.
+
 ## Overview
 
 Voxtype is a push-to-talk voice-to-text tool that works with Omarchy's built-in dictation feature. This guide covers installation and setup when the Omarchy repo version is broken.
@@ -17,7 +19,7 @@ The Omarchy Package Repository version of `voxtype-bin` may be broken (404 error
 yay -S aur/voxtype-bin
 ```
 
-If that doesn't work, use the [force-aur-install](../force-aur-install/README.md) method.
+If that doesn't work, see the [force-AUR troubleshooting reference](../../troubleshooting/force-aur-install/README.md).
 
 ## Setup Steps
 

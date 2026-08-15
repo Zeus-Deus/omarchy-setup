@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Troubleshooting helper; not called by the main installer.
 set -euo pipefail
 
 echo "=== Btrfs Health Check ==="

@@ -1,5 +1,7 @@
 # AirPods Audio + Mic Fix (Linux / Arch / Omarchy)
 
+> Optional feature. This is not run by the main installer.
+
 A one-shot setup that makes AirPods behave the way they do on macOS:
 
 - **High-fidelity stereo (A2DP AAC) by default.**

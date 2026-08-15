@@ -1,5 +1,7 @@
 # ASUS ROG Linux Setup Guide (Omarchy/Arch)
 
+> Archived pre-Quattro guide. Current ASUS support belongs in Omarchy's hardware detection and this repository's laptop profile.
+
 Quick setup guide for ASUS ROG laptops on Arch-based distributions, specifically tested on **Omarchy**.
 
 ## What This Does

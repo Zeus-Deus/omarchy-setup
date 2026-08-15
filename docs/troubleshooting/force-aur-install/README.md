@@ -1,5 +1,7 @@
 # Force AUR Installation When Package Exists in Omarchy Repo
 
+> Troubleshooting reference. Confirm the current package state before using it.
+
 ## Problem
 
 When a package exists in both the Omarchy Package Repository (OPR) and AUR, `yay` will always prefer the Omarchy repo version. If the Omarchy repo version is broken (404 error) or outdated, you need to force installation from AUR.

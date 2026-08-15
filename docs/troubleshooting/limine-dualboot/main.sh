@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Machine-specific helper; not called by the main installer.
 set -euo pipefail
 
 # Purpose: Add a Windows chainload entry to Limine without copying any Windows files.

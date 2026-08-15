@@ -1,3 +1,4 @@
+# Archived pre-Quattro commands; not called by the main installer.
 # https://asus-linux.org/guides/arch-guide/
 
 # Repo's
@@ -50,4 +51,3 @@ pacman -Q nvidia-utils vulkan-icd-loader
 
 # If you dont, install:
 sudo pacman -S nvidia-utils vulkan-icd-loader
-

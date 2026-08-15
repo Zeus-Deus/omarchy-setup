@@ -1,5 +1,6 @@
 #!/bin/bash
 #
+# Optional feature; not called by the main installer.
 # AirPods audio+mic fix for Arch / Omarchy (April 2026+)
 #
 # Makes AirPods behave the way they do on macOS:
