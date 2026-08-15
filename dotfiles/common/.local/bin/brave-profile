@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly program_name="${0##*/}"
+
+usage() {
+  printf 'Usage: %s PROFILE_NAME|--default [--print-directory | --webapp URL [BROWSER_ARGUMENTS...] | --focus-webapp WINDOW_PATTERN URL [BROWSER_ARGUMENTS...] | BRAVE_ARGUMENTS...]\n' "$program_name" >&2
+}
+
+fail() {
+  local message="$1"
+
+  printf '%s: %s\n' "$program_name" "$message" >&2
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send --urgency=critical "Brave profile could not be opened" "$message" >/dev/null 2>&1 || true
+  fi
+  exit 1
+}
+
+if (( $# == 0 )); then
+  usage
+  exit 2
+fi
+
+readonly brave_bin="${BRAVE_PROFILE_BROWSER:-brave}"
+readonly config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+readonly local_state="${BRAVE_PROFILE_LOCAL_STATE:-$config_home/BraveSoftware/Brave-Browser/Local State}"
+readonly profile_config="${BRAVE_PROFILE_CONFIG:-$config_home/omarchy-setup/browser-profile}"
+
+if [[ "$1" == "--default" ]]; then
+  [[ -r "$profile_config" ]] || fail "The default profile is not configured at $profile_config."
+  IFS= read -r profile_name < "$profile_config"
+  [[ -n "$profile_name" ]] || fail "The default profile in $profile_config is empty."
+else
+  profile_name="$1"
+fi
+readonly profile_name
+shift
+
+command -v jq >/dev/null 2>&1 || fail "jq is required to resolve Brave's visible profile names."
+command -v "$brave_bin" >/dev/null 2>&1 || fail "The Brave executable '$brave_bin' was not found."
+[[ -r "$local_state" ]] || fail "Brave's profile metadata was not found at $local_state. Start Brave once and create the profile first."
+
+if ! jq -e '.profile.info_cache | type == "object"' "$local_state" >/dev/null 2>&1; then
+  fail "Brave's profile metadata is missing or invalid in $local_state."
+fi
+
+mapfile -t profile_directories < <(
+  jq -r --arg profile_name "$profile_name" '
+    .profile.info_cache
+    | to_entries[]
+    | select(.value.name? == $profile_name)
+    | .key
+  ' "$local_state"
+)
+
+case "${#profile_directories[@]}" in
+  0)
+    fail "No Brave profile is named '$profile_name'. Rename the profile in Brave or update the binding."
+    ;;
+  1)
+    ;;
+  *)
+    fail "More than one Brave profile is named '$profile_name'. Give each profile a unique visible name."
+    ;;
+esac
+
+if [[ "${1:-}" == "--print-directory" ]]; then
+  (( $# == 1 )) || fail "--print-directory cannot be combined with Brave arguments."
+  printf '%s\n' "${profile_directories[0]}"
+  exit 0
+fi
+
+if [[ "${1:-}" == "--webapp" ]]; then
+  (( $# >= 2 )) || fail "--webapp requires a URL."
+  readonly webapp_url="$2"
+  shift 2
+
+  command -v omarchy >/dev/null 2>&1 || fail "The Omarchy CLI is required to launch web apps."
+  readonly default_browser="$(env -u BROWSER xdg-settings get default-web-browser)"
+  [[ "$default_browser" == brave* ]] || fail "Brave must be the Omarchy default browser before launching a Brave web app."
+
+  exec omarchy launch webapp \
+    "$webapp_url" \
+    "--profile-directory=${profile_directories[0]}" \
+    "$@"
+fi
+
+if [[ "${1:-}" == "--focus-webapp" ]]; then
+  (( $# >= 3 )) || fail "--focus-webapp requires a window pattern and URL."
+  readonly window_pattern="$2"
+  readonly webapp_url="$3"
+  shift 3
+
+  command -v omarchy >/dev/null 2>&1 || fail "The Omarchy CLI is required to launch web apps."
+  readonly default_browser="$(env -u BROWSER xdg-settings get default-web-browser)"
+  [[ "$default_browser" == brave* ]] || fail "Brave must be the Omarchy default browser before launching a Brave web app."
+
+  exec omarchy launch or focus webapp \
+    "$window_pattern" \
+    "$webapp_url" \
+    "--profile-directory=${profile_directories[0]}" \
+    "$@"
+fi
+
+exec "$brave_bin" \
+  --profile-directory="${profile_directories[0]}" \
+  --new-window \
+  "$@"
