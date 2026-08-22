@@ -2,12 +2,19 @@
 
 set -euo pipefail
 
-readonly fixture_home="/tmp/omarchy-home"
-readonly fixture_bin="/tmp/omarchy-bin"
+# Runs anywhere: the repo is located from this script, fixtures live in a
+# throwaway directory, and the live Hyprland session (if any) is ignored.
+readonly repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly fixture_root="$(mktemp -d)"
+trap 'rm -rf -- "$fixture_root"' EXIT
+unset HYPRLAND_INSTANCE_SIGNATURE
+
+readonly fixture_home="$fixture_root/home"
+readonly fixture_bin="$fixture_root/bin"
 readonly config_home="$fixture_home/.config"
-readonly command_log="/tmp/omarchy-command.log"
-readonly xrdb_log="/tmp/xrdb-command.log"
-readonly wrapped_command_log="/tmp/wrapped-command.log"
+readonly command_log="$fixture_root/omarchy-command.log"
+readonly xrdb_log="$fixture_root/xrdb-command.log"
+readonly wrapped_command_log="$fixture_root/wrapped-command.log"
 
 install -d \
   "$fixture_bin" \
@@ -61,20 +68,20 @@ export XWAYLAND_TEST_COMMAND_LOG="$wrapped_command_log"
 export PATH="$fixture_bin:$PATH"
 
 luac5.4 -p \
-  /repo/dotfiles/common/.config/hypr/bindings.lua \
-  /repo/dotfiles/common/.config/hypr/input.lua \
-  /repo/dotfiles/common/.config/hypr/windows.lua \
-  /repo/profiles/displays/high-refresh/monitors.lua
+  "$repo_dir"/dotfiles/common/.config/hypr/bindings.lua \
+  "$repo_dir"/dotfiles/common/.config/hypr/input.lua \
+  "$repo_dir"/dotfiles/common/.config/hypr/windows.lua \
+  "$repo_dir"/profiles/displays/high-refresh/monitors.lua
 
-bash /repo/install.sh --keyboard us --display high-refresh
+bash "$repo_dir"/install.sh --keyboard us --display high-refresh
 
-cmp /repo/dotfiles/common/.config/hypr/bindings.lua "$config_home/hypr/bindings.lua"
-cmp /repo/dotfiles/common/.config/hypr/input.lua "$config_home/hypr/input.lua"
-cmp /repo/dotfiles/common/.config/hypr/windows.lua "$config_home/hypr/windows.lua"
-cmp /repo/profiles/displays/high-refresh/monitors.lua "$config_home/hypr/monitors.lua"
-cmp /repo/dotfiles/common/.local/bin/brave-profile "$fixture_home/.local/bin/brave-profile"
-cmp /repo/dotfiles/common/.local/bin/xwayland-scale-wrapper "$fixture_home/.local/bin/xwayland-scale-wrapper"
-cmp /repo/dotfiles/common/.local/share/applications/X.desktop "$fixture_home/.local/share/applications/X.desktop"
+cmp "$repo_dir"/dotfiles/common/.config/hypr/bindings.lua "$config_home/hypr/bindings.lua"
+cmp "$repo_dir"/dotfiles/common/.config/hypr/input.lua "$config_home/hypr/input.lua"
+cmp "$repo_dir"/dotfiles/common/.config/hypr/windows.lua "$config_home/hypr/windows.lua"
+cmp "$repo_dir"/profiles/displays/high-refresh/monitors.lua "$config_home/hypr/monitors.lua"
+cmp "$repo_dir"/dotfiles/common/.local/bin/brave-profile "$fixture_home/.local/bin/brave-profile"
+cmp "$repo_dir"/dotfiles/common/.local/bin/xwayland-scale-wrapper "$fixture_home/.local/bin/xwayland-scale-wrapper"
+cmp "$repo_dir"/dotfiles/common/.local/share/applications/X.desktop "$fixture_home/.local/share/applications/X.desktop"
 
 [[ -x "$fixture_home/.local/bin/brave-profile" ]]
 [[ -x "$fixture_home/.local/bin/xwayland-scale-wrapper" ]]
@@ -85,13 +92,13 @@ cmp /repo/dotfiles/common/.local/share/applications/X.desktop "$fixture_home/.lo
 grep -Fxq 'default browser brave' "$command_log"
 
 : > "$command_log"
-bash /repo/install.sh --machine desktop --keyboard us --display high-refresh
+bash "$repo_dir"/install.sh --machine desktop --keyboard us --display high-refresh
 grep -Fxq 'pkg add bitwarden jq voxtype-bin mangohud openrgb steam xorg-xrdb' "$command_log"
 grep -Fxq 'pkg aur add brave-bin diskord gazelle-tui ticktick voxtype-tui rgbpc' "$command_log"
 grep -Fxq 'default browser brave' "$command_log"
 
 : > "$command_log"
-bash /repo/install.sh --machine laptop --keyboard us --display high-refresh
+bash "$repo_dir"/install.sh --machine laptop --keyboard us --display high-refresh
 grep -Fxq 'pkg add bitwarden jq voxtype-bin asusctl rog-control-center' "$command_log"
 grep -Fxq 'pkg aur add brave-bin diskord gazelle-tui ticktick voxtype-tui' "$command_log"
 grep -Fxq 'default browser brave' "$command_log"
@@ -102,24 +109,24 @@ grep -Fxq -- "-merge $fixture_home/.Xresources" "$xrdb_log"
 grep -Fxq 'first two words' "$wrapped_command_log"
 
 backup_count_before="$(find "$config_home" -type f -name '*.bak.*' | wc -l)"
-bash /repo/install.sh --keyboard us --display high-refresh
+bash "$repo_dir"/install.sh --keyboard us --display high-refresh
 backup_count_after="$(find "$config_home" -type f -name '*.bak.*' | wc -l)"
 [[ "$backup_count_before" -eq "$backup_count_after" ]]
 [[ "$(grep -Fxc 'require("hypr.windows")' "$config_home/hypr/hyprland.lua")" -eq 1 ]]
 
-bash /repo/install.sh --keyboard be-us --display high-refresh
+bash "$repo_dir"/install.sh --keyboard be-us --display high-refresh
 [[ "$(< "$config_home/omarchy-setup/keyboard-profile")" == "be-us" ]]
 
 printf '%s\n' '-- keep existing monitor settings --' > "$config_home/hypr/monitors.lua"
-bash /repo/install.sh --machine laptop --keyboard be-us
+bash "$repo_dir"/install.sh --machine laptop --keyboard be-us
 grep -Fxq -- '-- keep existing monitor settings --' "$config_home/hypr/monitors.lua"
 
-if bash /repo/install.sh --keyboard invalid >/dev/null 2>&1; then
+if bash "$repo_dir"/install.sh --keyboard invalid >/dev/null 2>&1; then
   printf '%s\n' 'Expected an invalid keyboard profile to fail.' >&2
   exit 1
 fi
 
-if bash /repo/install.sh --machine invalid >/dev/null 2>&1; then
+if bash "$repo_dir"/install.sh --machine invalid >/dev/null 2>&1; then
   printf '%s\n' 'Expected an invalid machine profile to fail.' >&2
   exit 1
 fi
