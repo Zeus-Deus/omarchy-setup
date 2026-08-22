@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Name=X
+Exec=sh -c 'omarchy-launch-webapp https://x.com/ --user-data-dir="$HOME/.config/brave-x" --disable-accelerated-video-decode'
+Terminal=false
+Type=Application
+Icon=x
+StartupNotify=true

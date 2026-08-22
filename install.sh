@@ -6,6 +6,7 @@ readonly repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly dotfiles_dir="$repo_dir/dotfiles/common"
 readonly config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 readonly bin_home="${HOME}/.local/bin"
+readonly data_home="${HOME}/.local/share"
 readonly backup_suffix="bak.$(date +%Y%m%d%H%M%S)"
 
 keyboard_profile="us"
@@ -185,6 +186,7 @@ deploy "$keyboard_profile_source" "$config_home/omarchy-setup/keyboard-profile" 
 deploy "$dotfiles_dir/.config/hypr/bindings.lua" "$config_home/hypr/bindings.lua" 644
 deploy "$dotfiles_dir/.config/hypr/input.lua" "$config_home/hypr/input.lua" 644
 deploy "$dotfiles_dir/.config/hypr/windows.lua" "$config_home/hypr/windows.lua" 644
+deploy "$dotfiles_dir/.local/share/applications/X.desktop" "$data_home/applications/X.desktop" 644
 if [[ -n "$display_profile_source" ]]; then
   deploy "$display_profile_source" "$config_home/hypr/monitors.lua" 644
 fi

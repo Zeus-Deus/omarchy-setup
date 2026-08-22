@@ -59,18 +59,23 @@ o.bind(
   { launch = 'brave-profile --default --focus-webapp "Google Messages" "https://messages.google.com/web/conversations"' }
 )
 
+-- X gets its own Brave instance (separate data dir, auto-created on first
+-- launch; log in once) so hardware video decode can be off for X alone: on
+-- NVIDIA open drivers with a 256 MiB BAR1, x.com's autoplay feed exhausts BAR1
+-- and crashes Brave's Media thread. Normal Brave profiles are unaffected.
+-- Open it as a regular browser: brave --user-data-dir="$HOME/.config/brave-x"
 hl.unbind("SUPER + SHIFT + X") -- Was: X
 o.bind(
   "SUPER + SHIFT + X",
   "X",
-  { launch = 'brave-profile --default --webapp "https://x.com/"' }
+  { launch = 'omarchy-launch-webapp "https://x.com/" --user-data-dir="$HOME/.config/brave-x" --disable-accelerated-video-decode' }
 )
 
 hl.unbind("SUPER + SHIFT + ALT + X") -- Was: X Post
 o.bind(
   "SUPER + SHIFT + ALT + X",
   "X Post",
-  { launch = 'brave-profile --default --webapp "https://x.com/compose/post"' }
+  { launch = 'omarchy-launch-webapp "https://x.com/compose/post" --user-data-dir="$HOME/.config/brave-x" --disable-accelerated-video-decode' }
 )
 
 hl.unbind("SUPER + SHIFT + S") -- Was: Google Maps

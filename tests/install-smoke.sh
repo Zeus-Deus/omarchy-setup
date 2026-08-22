@@ -74,6 +74,7 @@ cmp /repo/dotfiles/common/.config/hypr/windows.lua "$config_home/hypr/windows.lu
 cmp /repo/profiles/displays/high-refresh/monitors.lua "$config_home/hypr/monitors.lua"
 cmp /repo/dotfiles/common/.local/bin/brave-profile "$fixture_home/.local/bin/brave-profile"
 cmp /repo/dotfiles/common/.local/bin/xwayland-scale-wrapper "$fixture_home/.local/bin/xwayland-scale-wrapper"
+cmp /repo/dotfiles/common/.local/share/applications/X.desktop "$fixture_home/.local/share/applications/X.desktop"
 
 [[ -x "$fixture_home/.local/bin/brave-profile" ]]
 [[ -x "$fixture_home/.local/bin/xwayland-scale-wrapper" ]]
