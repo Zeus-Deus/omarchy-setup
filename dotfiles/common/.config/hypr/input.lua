@@ -30,3 +30,7 @@ input_settings.accel_profile = "flat"
 input_settings.touchpad = { natural_scroll = true }
 
 hl.config({ input = input_settings })
+
+-- Faster one-finger pointer movement on the laptop touchpad only.
+-- Match its hardware model; leave mice and other touchpads unchanged.
+hl.device({ name = "asue120d:00-04f3:31fb-touchpad", sensitivity = 0.2 })
