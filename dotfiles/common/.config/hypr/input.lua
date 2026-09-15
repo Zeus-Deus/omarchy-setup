@@ -1,5 +1,5 @@
--- Select only the keyboard layout here. All other input settings continue to
--- inherit Omarchy's defaults.
+-- Select the keyboard layout and shared pointer preferences here.
+-- Unspecified input settings continue to inherit Omarchy's defaults.
 
 local config_home = os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")
 local profile_path = config_home .. "/omarchy-setup/keyboard-profile"
@@ -25,5 +25,8 @@ local input_settings = assert(profiles[profile_name], "Unknown keyboard profile:
 -- Keep mouse motion consistent for gaming instead of using libinput's
 -- device-dependent adaptive acceleration.
 input_settings.accel_profile = "flat"
+
+-- Move content with your fingers on touchpads; leave mouse scrolling unchanged.
+input_settings.touchpad = { natural_scroll = true }
 
 hl.config({ input = input_settings })

@@ -70,6 +70,7 @@ bash /repo/install.sh --keyboard us --display high-refresh
 
 cmp /repo/dotfiles/common/.config/hypr/bindings.lua "$config_home/hypr/bindings.lua"
 cmp /repo/dotfiles/common/.config/hypr/input.lua "$config_home/hypr/input.lua"
+lua5.4 /repo/tests/input-settings.lua "$config_home/hypr/input.lua" us
 cmp /repo/dotfiles/common/.config/hypr/windows.lua "$config_home/hypr/windows.lua"
 cmp /repo/profiles/displays/high-refresh/monitors.lua "$config_home/hypr/monitors.lua"
 cmp /repo/dotfiles/common/.local/bin/brave-profile "$fixture_home/.local/bin/brave-profile"
@@ -108,6 +109,7 @@ backup_count_after="$(find "$config_home" -type f -name '*.bak.*' | wc -l)"
 
 bash /repo/install.sh --keyboard be-us --display high-refresh
 [[ "$(< "$config_home/omarchy-setup/keyboard-profile")" == "be-us" ]]
+lua5.4 /repo/tests/input-settings.lua "$config_home/hypr/input.lua" be,us
 
 printf '%s\n' '-- keep existing monitor settings --' > "$config_home/hypr/monitors.lua"
 bash /repo/install.sh --machine laptop --keyboard be-us
