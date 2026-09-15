@@ -16,7 +16,7 @@ local profiles = {
   ["be-us"] = {
     kb_layout = "be,us",
     kb_variant = "",
-    kb_options = "compose:caps,shift:both_capslock_cancel,grp:lalt_lshift_toggle,lv3:ralt_switch",
+    kb_options = "compose:caps,shift:both_capslock_cancel,lv3:ralt_switch",
   },
 }
 
