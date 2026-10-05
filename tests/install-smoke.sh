@@ -62,6 +62,10 @@ printf '%s\n' \
 
 export HOME="$fixture_home"
 export XDG_CONFIG_HOME="$config_home"
+export XDG_STATE_HOME="$fixture_home/.local/state"
+export XDG_DATA_HOME="$fixture_home/.local/share"
+export XDG_CACHE_HOME="$fixture_home/.cache"
+export XDG_RUNTIME_DIR="$fixture_home/run"
 export OMARCHY_TEST_COMMAND_LOG="$command_log"
 export XWAYLAND_TEST_XRDB_LOG="$xrdb_log"
 export XWAYLAND_TEST_COMMAND_LOG="$wrapped_command_log"
@@ -130,5 +134,12 @@ if bash "$repo_dir"/install.sh --machine invalid >/dev/null 2>&1; then
   printf '%s\n' 'Expected an invalid machine profile to fail.' >&2
   exit 1
 fi
+
+# The feature stays opt-in, then installs through the main entry point.
+[[ ! -e "$fixture_home/.local/share/mise-wrapper-guard/guard.py" ]]
+bash "$repo_dir"/install.sh --mise-wrapper-resolution
+grep -Fq 'hook install post-update ' "$command_log"
+[[ -f "$fixture_home/.local/share/mise-wrapper-guard/guard.py" ]]
+[[ ! -e "$fixture_home/.local/bin/omarchy-mise-install" ]]
 
 printf '%s\n' 'Container installer test passed.'

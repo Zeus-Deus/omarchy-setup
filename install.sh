@@ -12,6 +12,7 @@ readonly backup_suffix="bak.$(date +%Y%m%d%H%M%S)"
 keyboard_profile="us"
 display_profile=""
 machine_profile=""
+mise_wrapper_resolution=false
 
 usage() {
   printf '%s\n' \
@@ -21,6 +22,7 @@ usage() {
     '  --machine desktop|laptop  Install common and machine-specific packages' \
     '  --keyboard us|be-us       Select the keyboard layout profile (default: us)' \
     '  --display high-refresh    Apply a display profile (default: leave unchanged)' \
+    '  --mise-wrapper-resolution Install optional post-update mise wrapper guard' \
     '  -h, --help                Show this help'
 }
 
@@ -60,6 +62,10 @@ while (( $# > 0 )); do
       ;;
     --display=*)
       display_profile="${1#*=}"
+      shift
+      ;;
+    --mise-wrapper-resolution)
+      mise_wrapper_resolution=true
       shift
       ;;
     --help|-h)
@@ -197,6 +203,10 @@ readonly hyprland_config="$config_home/hypr/hyprland.lua"
   exit 1
 }
 ensure_lua_require "$hyprland_config" "hypr.windows" 'require("hypr.autostart")'
+
+if [[ "$mise_wrapper_resolution" == true ]]; then
+  bash "$repo_dir/features/mise-wrapper-resolution/install.sh"
+fi
 
 omarchy default browser brave
 

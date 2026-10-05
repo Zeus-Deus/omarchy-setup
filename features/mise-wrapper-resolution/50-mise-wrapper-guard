@@ -1,0 +1,21 @@
+#!/bin/bash
+# User-local workaround for omacom/omarchy#8798; never override the installer.
+warn() {
+  printf '%s\n' "Mise wrapper guard: $1" >&2
+  if [[ -x /usr/bin/notify-send ]]; then
+    /usr/bin/timeout 3 /usr/bin/notify-send 'Mise wrapper guard: review needed' "$1" >/dev/null 2>&1 || true
+  fi
+}
+if ! /usr/bin/timeout 30 /usr/bin/python3 "$HOME/.local/share/mise-wrapper-guard/guard.py" --apply; then
+  warn 'Protection check failed or timed out. Update will continue; existing wrappers were not intentionally reset.'
+else
+  report="${XDG_STATE_HOME:-$HOME/.local/state}/mise-wrapper-guard/last-report.txt"
+  if [[ -r $report ]]; then
+    while IFS= read -r line; do
+      case "$line" in
+        WARNING*) warn "$line" ;;
+      esac
+    done < "$report"
+  fi
+fi
+exit 0
