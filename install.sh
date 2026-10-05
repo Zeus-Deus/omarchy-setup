@@ -13,6 +13,7 @@ keyboard_profile="us"
 display_profile=""
 machine_profile=""
 mise_wrapper_resolution=false
+herdr_overrides=false
 
 usage() {
   printf '%s\n' \
@@ -23,6 +24,7 @@ usage() {
     '  --keyboard us|be-us       Select the keyboard layout profile (default: us)' \
     '  --display high-refresh    Apply a display profile (default: leave unchanged)' \
     '  --mise-wrapper-resolution Install optional post-update mise wrapper guard' \
+    '  --herdr                   Layer personal herdr settings on the Omarchy default' \
     '  -h, --help                Show this help'
 }
 
@@ -66,6 +68,10 @@ while (( $# > 0 )); do
       ;;
     --mise-wrapper-resolution)
       mise_wrapper_resolution=true
+      shift
+      ;;
+    --herdr)
+      herdr_overrides=true
       shift
       ;;
     --help|-h)
@@ -206,6 +212,10 @@ ensure_lua_require "$hyprland_config" "hypr.windows" 'require("hypr.autostart")'
 
 if [[ "$mise_wrapper_resolution" == true ]]; then
   bash "$repo_dir/features/mise-wrapper-resolution/install.sh"
+fi
+
+if [[ "$herdr_overrides" == true ]]; then
+  bash "$repo_dir/features/herdr/install.sh"
 fi
 
 omarchy default browser brave

@@ -143,4 +143,22 @@ grep -Fq 'hook install post-update ' "$command_log"
 [[ -f "$fixture_home/.local/share/mise-wrapper-guard/guard.py" ]]
 [[ ! -e "$fixture_home/.local/bin/omarchy-mise-install" ]]
 
+# herdr overrides merge into the existing config and are opt-in.
+printf '%s\n' '#!/usr/bin/env bash' '[[ $1 == config ]]' > "$fixture_bin/herdr"
+chmod 755 "$fixture_bin/herdr"
+install -d "$config_home/herdr"
+printf '%s\n' '[ui]' 'accent = "blue"' > "$config_home/herdr/config.toml"
+bash "$repo_dir"/install.sh
+if grep -q sidebar_max_width "$config_home/herdr/config.toml"; then
+  printf '%s\n' 'herdr overrides applied without --herdr.' >&2
+  exit 1
+fi
+bash "$repo_dir"/install.sh --herdr
+grep -Fq 'hook install post-update ' "$command_log"
+grep -Fxq 'accent = "blue"' "$config_home/herdr/config.toml"
+grep -Fxq 'sidebar_max_width = 60  # omarchy-setup' "$config_home/herdr/config.toml"
+herdr_config_before="$(cat "$config_home/herdr/config.toml")"
+bash "$repo_dir"/install.sh --herdr
+[[ "$(cat "$config_home/herdr/config.toml")" == "$herdr_config_before" ]]
+
 printf '%s\n' 'Container installer test passed.'

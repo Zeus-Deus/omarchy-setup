@@ -1,0 +1,23 @@
+#!/bin/bash
+# Re-applies personal herdr settings from omarchy-setup on top of Omarchy's
+# default config. Only writes when a setting is missing or different.
+# Never blocks an update; install.sh passes --strict to surface failures.
+fail() { printf 'herdr overrides: %s\n' "$1" >&2; [[ $strict == true ]] && exit 1; exit 0; }
+strict=false
+[[ ${1:-} == --strict ]] && strict=true
+helper_home="$HOME/.local/share/herdr-overrides"
+config="${XDG_CONFIG_HOME:-$HOME/.config}/herdr/config.toml"
+command -v herdr >/dev/null && [[ -r $helper_home/apply-overrides.py ]] || exit 0
+
+# Omarchy only seeds this file when it is missing; do the same.
+[[ -f $config ]] || omarchy refresh config herdr/config.toml >/dev/null
+
+changes=$(/usr/bin/python3 "$helper_home/apply-overrides.py" "$helper_home/overrides.toml" "$config") ||
+  fail 'could not apply; config left unchanged.'
+[[ -n $changes ]] || exit 0
+printf '%s\n' "$changes"
+herdr config check >/dev/null || { herdr config check >&2; fail 'herdr reports config problems.'; }
+if herdr status server >/dev/null 2>&1; then
+  herdr server reload-config >/dev/null || true
+fi
+exit 0

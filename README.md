@@ -12,6 +12,10 @@ It uses a post-update hook, not an `omarchy-mise-install` override. This is not 
 upstream fix or a guarantee against future changes; apply manually after app
 installs that regenerate wrappers.
 
+Personal herdr settings are optional too: `./install.sh --herdr` merges
+[`features/herdr/overrides.toml`](features/herdr/README.md) into Omarchy's
+default herdr config and re-applies it after each Omarchy update.
+
 ## Docker access
 
 At the end of setup, the installer runs Omarchy's opt-in flow for sudoless

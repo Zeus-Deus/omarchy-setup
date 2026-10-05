@@ -1,0 +1,9 @@
+# Personal herdr settings layered on top of Omarchy's default config.
+#
+# Each key is merged into ~/.config/herdr/config.toml; every other line there is
+# left alone. Use single-line `key = value` under a [section] header, with
+# comments on their own lines. `herdr --default-config` lists every setting.
+
+[ui]
+# herdr caps the sidebar at 36 columns by default; this lets it be dragged wider.
+sidebar_max_width = 60
