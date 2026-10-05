@@ -94,6 +94,7 @@ cmp "$repo_dir"/dotfiles/common/.local/share/applications/X.desktop "$fixture_ho
 [[ "$("$fixture_home/.local/bin/brave-profile" --default --print-directory)" == "Profile 1" ]]
 [[ "$(grep -Fxc 'require("hypr.windows")' "$config_home/hypr/hyprland.lua")" -eq 1 ]]
 grep -Fxq 'default browser brave' "$command_log"
+grep -Fxq 'setup security sudoless docker' "$command_log"
 
 : > "$command_log"
 bash "$repo_dir"/install.sh --machine desktop --keyboard us --display high-refresh

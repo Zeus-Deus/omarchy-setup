@@ -220,3 +220,10 @@ fi
 
 printf 'Omarchy setup installed. Machine: %s; Brave profile: %s; keyboard: %s; display: %s\n' \
   "${machine_profile:-not selected}" "$brave_profile_name" "$keyboard_profile" "${display_profile:-unchanged}"
+
+printf '%s\n' \
+  '' \
+  'Docker access' \
+  'Omarchy requires sudo for Docker by default. You can now opt in to' \
+  'sudoless Docker; Omarchy will explain the security trade-off first.'
+omarchy setup security sudoless docker
