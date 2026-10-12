@@ -31,3 +31,7 @@ To run the flow separately:
 ```bash
 omarchy setup security sudoless docker
 ```
+
+## Optional setup
+
+- [Unity Hub and Editor](docs/setup/unity/README.md)
