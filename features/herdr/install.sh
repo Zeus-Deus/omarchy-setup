@@ -7,6 +7,9 @@ readonly helper_home="$HOME/.local/share/herdr-overrides"
 command -v omarchy >/dev/null || { printf '%s\n' 'Omarchy is required.' >&2; exit 1; }
 command -v herdr >/dev/null || { printf '%s\n' 'herdr is not installed; Omarchy ships it.' >&2; exit 1; }
 
+command -v git >/dev/null || { printf '%s\n' 'git is required to restore Herdr plugins.' >&2; exit 1; }
+/usr/bin/python3 "$feature_dir/install-plugins.py" "$feature_dir/plugins.toml"
+
 install -d "$helper_home"
 install -m 644 "$feature_dir/apply-overrides.py" "$helper_home/apply-overrides.py"
 install -m 644 "$feature_dir/overrides.toml" "$helper_home/overrides.toml"

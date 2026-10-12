@@ -1,57 +1,71 @@
-# herdr overrides (optional)
+# Herdr setup (optional)
 
-Personal [herdr](https://herdr.dev) settings layered on top of the config
-Omarchy ships. Opt in during setup:
+Personal settings layered over Omarchy's defaults, plus pinned Focus and Peek
+plugins. Requires Herdr 0.9.1+, Python 3.11+, git, and network access for missing
+or changed plugin revisions.
 
 ```bash
 ./install.sh --herdr
-```
-
-Or install just this feature:
-
-```bash
+# Only Herdr, without changing other desktop settings:
 ./features/herdr/install.sh
 ```
 
-## How it stays update-safe
+## What is saved
 
-Omarchy owns the base: it ships herdr as a package and seeds
-`~/.config/herdr/config.toml` only when that file is missing. This feature never
-replaces the file. `apply-overrides.py` merges each key from `overrides.toml`
-into it, replacing a differing value, adding a missing key to its section, and
-keeping every other line, including settings saved from herdr's own UI. Lines
-it writes end in `# omarchy-setup`, and the previous file is kept as
-`config.toml.bak.<timestamp>` next to it. Nothing is written when the config
-already matches.
+- `plugins.toml`: GitHub sources, exact installed commit SHAs, and enabled state
+  for `Zeus-Deus/herdr-focus` and `Zeus-Deus/herdr-peek`.
+- `overrides.toml`: personal differences from Omarchy's base config: onboarding
+  off, status symbols, sidebar width 60, system toasts, Focus's agent/workspace
+  sidebar rows and styling, and seven Focus/Peek shortcuts.
+- Both plugins currently use their default settings: no plugin `config.toml`
+  files were present to copy.
 
-The installer copies the helper and overrides to
-`~/.local/share/herdr-overrides/` and registers `50-herdr-overrides` with
-`omarchy hook install post-update`. After each update, the hook re-applies the
-overrides, so `omarchy refresh herdr` (which resets the file to Omarchy's
-default) only lasts until the next update or install. When something changed, it
-runs `herdr config check` and reloads a running server. The hook never blocks an
-update.
+Omarchy still owns the base theme, terminal options, and ordinary keybindings.
+No plugin source is vendored. No `plugins.json`, absolute install paths, sessions,
+SSH machines, titles, triage state, logs, sockets, caches, or credentials are saved.
 
-## Changing settings
+## Restore and update behavior
 
-Add a single-line `key = value` under its `[section]` in `overrides.toml`, with
-comments on their own lines (no `[[array tables]]` or multi-line values). Check
-the setting and its default with `herdr --default-config`, then rerun the
-installer.
+`install-plugins.py` uses `herdr plugin install OWNER/REPO --ref SHA --yes`, not
+floating `main` or remote install scripts. It verifies the installed source,
+commit, and enabled state through Herdr's registry. Matching revisions are not
+reinstalled; unrelated plugins are retained. An ID belonging to a linked or
+different-source plugin stops installation rather than replacing it.
 
-| Setting | Value | Why |
-| --- | --- | --- |
-| `ui.sidebar_max_width` | `60` | The default limit of 36 columns stops the sidebar too narrow for workspace and branch names. |
+`apply-overrides.py` merges listed settings without replacing the config file.
+It supports multiline values and `[[keys.command]]` plugin shortcuts. Shortcuts
+are merged by action identity, not by overwriting the entire command list.
+Unrelated settings, bindings, and comments stay intact. A conflicting explicit
+shortcut aborts the merge without changing the file. New settings/shortcut
+blocks are marked `# omarchy-setup`; changed config is backed up alongside it.
+A matching config is left byte-for-byte unchanged.
+
+The installer copies the merge helper and overrides to
+`~/.local/share/herdr-overrides/` and registers the `50-herdr-overrides`
+post-update hook. The hook only re-applies settings, checks the config, and
+reloads a running server when needed. It does not fetch or reinstall plugins,
+start a server, or block an Omarchy update. Herdr reports default-key conflicts
+through `herdr config check`; resolve those before using the affected shortcut.
+
+## Changing the saved setup
+
+Edit `overrides.toml` for settings/sidebar/shortcuts. Edit the full commit SHA or
+enabled state in `plugins.toml` to deliberately change a plugin revision/state,
+then rerun the feature installer. Do not copy a live registry or runtime folders
+into Git. Removing a saved entry does not automatically remove installed settings
+or uninstall a plugin.
 
 ## Removing
 
-Delete `~/.config/omarchy/hooks/post-update.d/50-herdr-overrides` and
-`~/.local/share/herdr-overrides/`. Lines marked `# omarchy-setup` stay in the
-config until removed by hand or `omarchy refresh herdr`.
+Remove `~/.config/omarchy/hooks/post-update.d/50-herdr-overrides` and
+`~/.local/share/herdr-overrides/` to stop re-applying settings. Config entries
+remain until manually removed or reset with Omarchy. Uninstall plugins separately
+with `herdr plugin uninstall focus` / `herdr plugin uninstall peek`; unrelated
+plugin state is never deleted by this feature.
 
 ## Tests
 
 ```bash
-/usr/bin/python3 -m unittest discover -s tests -p 'test_herdr_*.py'
+PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 -m unittest discover -s tests -p 'test_herdr_*.py'
 bash tests/install-smoke.sh
 ```

@@ -1,9 +1,69 @@
-# Personal herdr settings layered on top of Omarchy's default config.
-#
-# Each key is merged into ~/.config/herdr/config.toml; every other line there is
-# left alone. Use single-line `key = value` under a [section] header, with
-# comments on their own lines. `herdr --default-config` lists every setting.
+# Personal differences from Omarchy's Herdr config, including plugin UI/keys.
+# Unlisted defaults stay owned by Omarchy; no sessions, machines or runtime state.
+onboarding = false
 
 [ui]
-# herdr caps the sidebar at 36 columns by default; this lets it be dragged wider.
+status_indicators = "symbols"
 sidebar_max_width = 60
+
+[ui.toast]
+delivery = "system"
+
+# Focus: the installed sidebar layout and status styling.
+[ui.sidebar.agents]
+row_gap = 0
+rows = [
+  ["state_icon", { token = "$ft_hot", bold = true }, "$ft", { token = "$ft_quiet", dim = true }],
+  [{ token = "$fstatus", rules = [{ starts_with = "Needs", fg = "#f16769", bold = true }, { contains = "need you", fg = "#f16769", bold = true }, { starts_with = "Done", fg = "#52c585", bold = true }, { contains = " done", fg = "#52c585", bold = true }, { starts_with = "Unread", fg = "#52c585", bold = true }, { starts_with = "Woke", fg = "#52c585", bold = true }, { contains = "orking", fg = "#e9b452" }, { contains = "atch", fg = "#6bcaca" }, { starts_with = "Idle", dim = true }, { starts_with = "Settled", dim = true }, { starts_with = "Snoozed", dim = true }, { starts_with = "Unknown", dim = true }] }, { token = "$fwatch", fg = "#6bcaca" }, { token = "workspace", dim = true }],
+]
+
+[ui.sidebar.spaces]
+row_gap = 0
+rows = [
+  ["state_icon", "workspace", { token = "$fws", rules = [{ starts_with = "Needs", fg = "#f16769", bold = true }, { contains = "need you", fg = "#f16769", bold = true }, { starts_with = "Done", fg = "#52c585", bold = true }, { contains = " done", fg = "#52c585", bold = true }, { starts_with = "Unread", fg = "#52c585", bold = true }, { starts_with = "Woke", fg = "#52c585", bold = true }, { contains = "orking", fg = "#e9b452" }, { contains = "atch", fg = "#6bcaca" }, { starts_with = "Idle", dim = true }, { starts_with = "Settled", dim = true }, { starts_with = "Snoozed", dim = true }, { starts_with = "Unknown", dim = true }] }, { token = "$fwswatch", fg = "#6bcaca" }],
+  [{ token = "branch", dim = true }, "git_status"],
+]
+
+# Peek
+[[keys.command]]
+key = "prefix+f"
+type = "plugin_action"
+command = "peek.pick"
+description = "peek: pick a file on screen"
+
+[[keys.command]]
+key = "prefix+shift+f"
+type = "plugin_action"
+command = "peek.last"
+description = "peek: open newest file"
+
+# Focus
+[[keys.command]]
+key = "prefix+a"
+type = "plugin_action"
+command = "focus.menu"
+description = "focus: attention menu"
+
+[[keys.command]]
+key = "prefix+u"
+type = "plugin_action"
+command = "focus.unread"
+description = "focus: mark unread / read"
+
+[[keys.command]]
+key = "prefix+shift+s"
+type = "plugin_action"
+command = "focus.settle"
+description = "focus: settle / unsettle"
+
+[[keys.command]]
+key = "prefix+i"
+type = "plugin_action"
+command = "focus.next"
+description = "focus: next agent that needs you"
+
+[[keys.command]]
+key = "prefix+shift+u"
+type = "plugin_action"
+command = "focus.undo"
+description = "focus: undo last triage"

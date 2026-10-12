@@ -81,6 +81,7 @@ bash "$repo_dir"/install.sh --keyboard us --display high-refresh
 
 cmp "$repo_dir"/dotfiles/common/.config/hypr/bindings.lua "$config_home/hypr/bindings.lua"
 cmp "$repo_dir"/dotfiles/common/.config/hypr/input.lua "$config_home/hypr/input.lua"
+lua5.4 "$repo_dir"/tests/input-settings.lua "$config_home/hypr/input.lua" us
 cmp "$repo_dir"/dotfiles/common/.config/hypr/windows.lua "$config_home/hypr/windows.lua"
 cmp "$repo_dir"/profiles/displays/high-refresh/monitors.lua "$config_home/hypr/monitors.lua"
 cmp "$repo_dir"/dotfiles/common/.local/bin/brave-profile "$fixture_home/.local/bin/brave-profile"
@@ -121,6 +122,7 @@ backup_count_after="$(find "$config_home" -type f -name '*.bak.*' | wc -l)"
 
 bash "$repo_dir"/install.sh --keyboard be-us --display high-refresh
 [[ "$(< "$config_home/omarchy-setup/keyboard-profile")" == "be-us" ]]
+lua5.4 "$repo_dir"/tests/input-settings.lua "$config_home/hypr/input.lua" be,us
 
 printf '%s\n' '-- keep existing monitor settings --' > "$config_home/hypr/monitors.lua"
 bash "$repo_dir"/install.sh --machine laptop --keyboard be-us
@@ -144,7 +146,24 @@ grep -Fq 'hook install post-update ' "$command_log"
 [[ ! -e "$fixture_home/.local/bin/omarchy-mise-install" ]]
 
 # herdr overrides merge into the existing config and are opt-in.
-printf '%s\n' '#!/usr/bin/env bash' '[[ $1 == config ]]' > "$fixture_bin/herdr"
+printf '%s\n' '#!/usr/bin/env bash' \
+  'case "$*" in' \
+  '  --version) printf "%s\n" "herdr 0.9.1" ;;' \
+  '  "plugin list --json") /usr/bin/python3 - "$OMARCHY_TEST_REPO/features/herdr/plugins.toml" << '\''PY'\''' \
+  'import json, sys, tomllib' \
+  'pins = tomllib.load(open(sys.argv[1], "rb"))["plugins"]' \
+  'plugins = []' \
+  'for pin in pins:' \
+  '    owner, repo = pin["source"].split("/")' \
+  '    plugins.append({"plugin_id": pin["id"], "enabled": pin["enabled"], "source": {"kind": "github", "owner": owner, "repo": repo, "resolved_commit": pin["ref"]}})' \
+  'print(json.dumps({"result": {"plugins": plugins}}))' \
+  'PY' \
+  '    ;;' \
+  '  "config check") exit 0 ;;' \
+  '  "status server") exit 1 ;;' \
+  '  *) exit 2 ;;' \
+  'esac' > "$fixture_bin/herdr"
+export OMARCHY_TEST_REPO="$repo_dir"
 chmod 755 "$fixture_bin/herdr"
 install -d "$config_home/herdr"
 printf '%s\n' '[ui]' 'accent = "blue"' > "$config_home/herdr/config.toml"

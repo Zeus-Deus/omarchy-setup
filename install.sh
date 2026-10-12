@@ -24,7 +24,7 @@ usage() {
     '  --keyboard us|be-us       Select the keyboard layout profile (default: us)' \
     '  --display high-refresh    Apply a display profile (default: leave unchanged)' \
     '  --mise-wrapper-resolution Install optional post-update mise wrapper guard' \
-    '  --herdr                   Layer personal herdr settings on the Omarchy default' \
+    '  --herdr                   Restore personal Herdr settings and pinned plugins' \
     '  -h, --help                Show this help'
 }
 

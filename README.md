@@ -12,9 +12,11 @@ It uses a post-update hook, not an `omarchy-mise-install` override. This is not 
 upstream fix or a guarantee against future changes; apply manually after app
 installs that regenerate wrappers.
 
-Personal herdr settings are optional too: `./install.sh --herdr` merges
-[`features/herdr/overrides.toml`](features/herdr/README.md) into Omarchy's
-default herdr config and re-applies it after each Omarchy update.
+Personal Herdr setup is optional too: `./install.sh --herdr` installs the pinned
+Focus and Peek plugins and merges your sidebar, shortcuts, and UI preferences
+into Omarchy's defaults. Settings are re-applied after each Omarchy update;
+plugin revisions only change when explicitly edited and installed.
+See [`features/herdr/README.md`](features/herdr/README.md).
 
 ## Docker access
 
