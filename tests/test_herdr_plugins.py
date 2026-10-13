@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import tomllib
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,10 +56,42 @@ else:
 ''')
         cli.chmod(0o755)
         self.env = dict(os.environ, HOME=str(self.home), PATH=f'{self.bin}:{os.environ["PATH"]}')
+        self.pins = self.home / 'plugins.toml'
+        self.pins.write_text('''min_herdr_version = "0.9.1"
+[[plugins]]
+id = "focus"
+source = "Zeus-Deus/herdr-focus"
+ref = "6c41b77130f3365f091a45cce102d56d07ac0359"
+enabled = true
+[[plugins]]
+id = "peek"
+source = "Zeus-Deus/herdr-peek"
+ref = "3d3d8d2abe9517900e82131dc0407ca9fc4808d3"
+enabled = true
+''')
+        self.heads = self.home / 'heads.json'
+        self.heads.write_text(json.dumps({'herdr-focus': 'a' * 40, 'herdr-peek': 'b' * 40}))
+        git = self.bin / 'git'
+        git.write_text(r'''#!/usr/bin/env python3
+import json, os, sys
+from pathlib import Path
+home = Path(os.environ['HOME'])
+a = sys.argv[1:]
+with (home / 'git-calls.jsonl').open('a') as log:
+    log.write(json.dumps(a) + '\n')
+if len(a) != 4 or a[:2] != ['ls-remote', '--exit-code'] or a[3] != 'HEAD':
+    sys.exit(2)
+repo = a[2].rsplit('/', 1)[-1].removesuffix('.git')
+if os.environ.get('FAIL_LATEST_REPO') == repo:
+    sys.exit(2)
+value = json.loads((home / 'heads.json').read_text())[repo]
+print(value + '\tHEAD')
+''')
+        git.chmod(0o755)
 
     def run_installer(self, **extra):
         return subprocess.run(['python3', str(FEATURE / 'install-plugins.py'),
-                               str(FEATURE / 'plugins.toml')],
+                               str(self.pins)],
                               env=dict(self.env, **extra), capture_output=True, text=True, timeout=10)
 
     def calls(self):
@@ -101,6 +134,69 @@ else:
         self.assertEqual(self.run_installer().returncode, 0)
         self.assertEqual(self.calls(), expected)
         self.assertTrue(all(p['enabled'] for p in json.loads(self.registry.read_text())))
+
+    def use_latest(self):
+        self.pins.write_text(self.pins.read_text().replace(
+            '6c41b77130f3365f091a45cce102d56d07ac0359', 'HEAD').replace(
+            '3d3d8d2abe9517900e82131dc0407ca9fc4808d3', 'HEAD'))
+
+    def test_latest_heads_are_refreshed_each_run_and_matching_commits_are_skipped(self):
+        self.use_latest()
+        result = self.run_installer()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        expected = [
+            ['plugin', 'install', 'Zeus-Deus/herdr-focus', '--ref', 'a' * 40, '--yes'],
+            ['plugin', 'install', 'Zeus-Deus/herdr-peek', '--ref', 'b' * 40, '--yes'],
+        ]
+        self.assertEqual(self.calls(), expected)
+        self.assertEqual(self.run_installer().returncode, 0)
+        self.assertEqual(self.calls(), expected)
+        lookups = [json.loads(line) for line in (self.home / 'git-calls.jsonl').read_text().splitlines()]
+        self.assertEqual(len(lookups), 4)
+        self.heads.write_text(json.dumps({'herdr-focus': 'c' * 40, 'herdr-peek': 'b' * 40}))
+        self.assertEqual(self.run_installer().returncode, 0)
+        self.assertEqual(self.calls(), expected + [
+            ['plugin', 'install', 'Zeus-Deus/herdr-focus', '--ref', 'c' * 40, '--yes']])
+
+    def test_repository_configuration_tracks_latest_default_branches(self):
+        plugins = tomllib.loads((FEATURE / 'plugins.toml').read_text())['plugins']
+        self.assertEqual({p['id'] for p in plugins}, {'focus', 'peek'})
+        self.assertTrue(all(p['ref'] == 'HEAD' for p in plugins))
+
+    def test_latest_lookup_failure_refuses_all_installs(self):
+        self.use_latest()
+        result = self.run_installer(FAIL_LATEST_REPO='herdr-peek')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.calls(), [])
+        self.assertEqual(json.loads(self.registry.read_text()), [])
+
+    def test_malformed_latest_commit_is_refused_before_install(self):
+        self.use_latest()
+        for value in ['abc', 'A' * 40, 'a' * 41, 'a' * 40 + '\tHEAD\n' + 'b' * 40]:
+            with self.subTest(value=value):
+                self.heads.write_text(json.dumps({'herdr-focus': value, 'herdr-peek': 'b' * 40}))
+                result = self.run_installer()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('Could not resolve latest commit', result.stderr)
+                self.assertEqual(self.calls(), [])
+
+    def test_latest_install_still_requires_exact_resolved_commit(self):
+        self.use_latest()
+        result = self.run_installer(WRONG_REF='1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Could not verify installed revision', result.stderr)
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_latest_enabled_state_restored_without_reinstall(self):
+        self.use_latest()
+        self.assertEqual(self.run_installer().returncode, 0)
+        plugins = json.loads(self.registry.read_text())
+        plugins[0]['enabled'] = False
+        self.registry.write_text(json.dumps(plugins))
+        result = self.run_installer()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.calls()[-1], ['plugin', 'enable', 'focus'])
+        self.assertEqual(len(self.calls()), 3)
 
 
 if __name__ == '__main__':

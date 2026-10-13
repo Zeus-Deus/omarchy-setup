@@ -1,14 +1,14 @@
-# Exact revisions currently installed; updates are explicit, not floating main.
+# HEAD follows the latest commit on each repository's default branch at setup time.
 min_herdr_version = "0.9.1"
 
 [[plugins]]
 id = "focus"
 source = "Zeus-Deus/herdr-focus"
-ref = "6c41b77130f3365f091a45cce102d56d07ac0359"
+ref = "HEAD"
 enabled = true
 
 [[plugins]]
 id = "peek"
 source = "Zeus-Deus/herdr-peek"
-ref = "3d3d8d2abe9517900e82131dc0407ca9fc4808d3"
+ref = "HEAD"
 enabled = true

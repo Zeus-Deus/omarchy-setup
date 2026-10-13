@@ -155,7 +155,8 @@ printf '%s\n' '#!/usr/bin/env bash' \
   'plugins = []' \
   'for pin in pins:' \
   '    owner, repo = pin["source"].split("/")' \
-  '    plugins.append({"plugin_id": pin["id"], "enabled": pin["enabled"], "source": {"kind": "github", "owner": owner, "repo": repo, "resolved_commit": pin["ref"]}})' \
+  '    ref = pin["ref"] if pin["ref"] != "HEAD" else ("a" if pin["id"] == "focus" else "b") * 40' \
+  '    plugins.append({"plugin_id": pin["id"], "enabled": pin["enabled"], "source": {"kind": "github", "owner": owner, "repo": repo, "resolved_commit": ref}})' \
   'print(json.dumps({"result": {"plugins": plugins}}))' \
   'PY' \
   '    ;;' \
@@ -165,6 +166,14 @@ printf '%s\n' '#!/usr/bin/env bash' \
   'esac' > "$fixture_bin/herdr"
 export OMARCHY_TEST_REPO="$repo_dir"
 chmod 755 "$fixture_bin/herdr"
+printf '%s\n' '#!/usr/bin/python3' \
+  'import sys' \
+  'args = sys.argv[1:]' \
+  'if len(args) != 4 or args[:2] != ["ls-remote", "--exit-code"] or args[3] != "HEAD": sys.exit(2)' \
+  'if args[2] not in ("https://github.com/Zeus-Deus/herdr-focus.git", "https://github.com/Zeus-Deus/herdr-peek.git"): sys.exit(2)' \
+  'print(("a" if args[2].endswith("herdr-focus.git") else "b") * 40 + "\tHEAD")' \
+  > "$fixture_bin/git"
+chmod 755 "$fixture_bin/git"
 install -d "$config_home/herdr"
 printf '%s\n' '[ui]' 'accent = "blue"' > "$config_home/herdr/config.toml"
 bash "$repo_dir"/install.sh

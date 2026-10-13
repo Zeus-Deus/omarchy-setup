@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Restore pinned plugins through Herdr's installer, then read them back."""
+"""Install configured plugins, resolving HEAD to the latest default-branch commit."""
 import json
 from pathlib import Path
 import re
@@ -42,13 +42,26 @@ def read_pins(path):
             raise ValueError('Plugin pins require only id/source/ref/enabled')
         if (not re.fullmatch(r'[a-z0-9_-]+', pin['id'])
                 or not re.fullmatch(r'[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+', pin['source'])
-                or not re.fullmatch(r'[0-9a-f]{40}', pin['ref'])
+                or not isinstance(pin['ref'], str)
+                or (pin['ref'] != 'HEAD' and not re.fullmatch(r'[0-9a-f]{40}', pin['ref']))
                 or not isinstance(pin['enabled'], bool)):
-            raise ValueError('Invalid plugin pin; use a full lowercase commit SHA')
+            raise ValueError('Invalid plugin reference; use HEAD or a full lowercase commit SHA')
         if pin['id'] in seen:
             raise ValueError(f'Duplicate plugin ID: {pin["id"]}')
         seen.add(pin['id'])
     return minimum, pins
+
+
+def resolve_commit(pin):
+    if pin['ref'] != 'HEAD':
+        return pin['ref']
+    result = subprocess.run(
+        ['git', 'ls-remote', '--exit-code', f'https://github.com/{pin["source"]}.git', 'HEAD'],
+        check=True, text=True, stdout=subprocess.PIPE, timeout=45)
+    fields = result.stdout.split()
+    if len(fields) != 2 or fields[1] != 'HEAD' or not re.fullmatch(r'[0-9a-f]{40}', fields[0]):
+        raise ValueError(f'Could not resolve latest commit for {pin["id"]}')
+    return fields[0]
 
 
 def main():
@@ -65,21 +78,24 @@ def main():
         item = current.get(pin['id'])
         if item and not matches_source(item, pin):
             raise ValueError(f'{pin["id"]} belongs to a different or linked source; left unchanged')
-    for pin in pins:
+    # Resolve every latest reference before writes. Each install is pinned to
+    # this run's resolved commit, so a moving branch cannot bypass read-back.
+    resolved = [(pin, resolve_commit(pin)) for pin in pins]
+    for pin, commit in resolved:
         item = current.get(pin['id'])
-        if not item or item['source'].get('resolved_commit') != pin['ref']:
-            run('plugin', 'install', pin['source'], '--ref', pin['ref'], '--yes')
+        if not item or item['source'].get('resolved_commit') != commit:
+            run('plugin', 'install', pin['source'], '--ref', commit, '--yes')
         item = installed().get(pin['id'])
-        if not item or not matches_source(item, pin) or item['source'].get('resolved_commit') != pin['ref']:
+        if not item or not matches_source(item, pin) or item['source'].get('resolved_commit') != commit:
             raise ValueError(f'Could not verify installed revision for {pin["id"]}')
         if item.get('enabled') != pin['enabled']:
             run('plugin', 'enable' if pin['enabled'] else 'disable', pin['id'])
         verified = installed().get(pin['id'])
         if (not verified or not matches_source(verified, pin)
-                or verified['source'].get('resolved_commit') != pin['ref']
+                or verified['source'].get('resolved_commit') != commit
                 or verified.get('enabled') != pin['enabled']):
             raise ValueError(f'Could not verify enabled state for {pin["id"]}')
-        print(f'Verified {pin["id"]} at {pin["ref"]}')
+        print(f'Verified {pin["id"]} at {commit}')
 
 
 if __name__ == '__main__':

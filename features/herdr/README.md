@@ -1,8 +1,8 @@
 # Herdr setup (optional)
 
-Personal settings layered over Omarchy's defaults, plus pinned Focus and Peek
-plugins. Requires Herdr 0.9.1+, Python 3.11+, git, and network access for missing
-or changed plugin revisions.
+Personal settings layered over Omarchy's defaults, plus the latest Focus and Peek
+plugins from their repositories' default branches. Requires Herdr 0.9.1+, Python
+3.11+, git, and network access when resolving or installing the latest plugins.
 
 ```bash
 ./install.sh --herdr
@@ -12,8 +12,8 @@ or changed plugin revisions.
 
 ## What is saved
 
-- `plugins.toml`: GitHub sources, exact installed commit SHAs, and enabled state
-  for `Zeus-Deus/herdr-focus` and `Zeus-Deus/herdr-peek`.
+- `plugins.toml`: GitHub sources, references (`HEAD` for latest by default), and
+  enabled state for `Zeus-Deus/herdr-focus` and `Zeus-Deus/herdr-peek`.
 - `overrides.toml`: personal differences from Omarchy's base config: onboarding
   off, status symbols, sidebar width 60, system toasts, Focus's agent/workspace
   sidebar rows and styling, and seven Focus/Peek shortcuts.
@@ -26,11 +26,13 @@ SSH machines, titles, triage state, logs, sockets, caches, or credentials are sa
 
 ## Restore and update behavior
 
-`install-plugins.py` uses `herdr plugin install OWNER/REPO --ref SHA --yes`, not
-floating `main` or remote install scripts. It verifies the installed source,
-commit, and enabled state through Herdr's registry. Matching revisions are not
-reinstalled; unrelated plugins are retained. An ID belonging to a linked or
-different-source plugin stops installation rather than replacing it.
+`install-plugins.py` resolves each `HEAD` reference to the latest default-branch
+commit on every setup run. It resolves all latest references before changing any
+plugins; a failed lookup stops without falling back to an older version. It then
+uses `herdr plugin install OWNER/REPO --ref SHA --yes` with that run's resolved
+commit and verifies the installed source, commit, and enabled state. Matching
+commits are not reinstalled; unrelated plugins are retained. An ID belonging to
+a linked or different-source plugin stops installation rather than replacing it.
 
 `apply-overrides.py` merges listed settings without replacing the config file.
 It supports multiline values and `[[keys.command]]` plugin shortcuts. Shortcuts
@@ -49,11 +51,13 @@ through `herdr config check`; resolve those before using the affected shortcut.
 
 ## Changing the saved setup
 
-Edit `overrides.toml` for settings/sidebar/shortcuts. Edit the full commit SHA or
-enabled state in `plugins.toml` to deliberately change a plugin revision/state,
-then rerun the feature installer. Do not copy a live registry or runtime folders
-into Git. Removing a saved entry does not automatically remove installed settings
-or uninstall a plugin.
+Edit `overrides.toml` for settings/sidebar/shortcuts. In `plugins.toml`, `ref =
+"HEAD"` tracks the repository's latest default branch; a full lowercase commit
+SHA is still supported if you deliberately want a fixed revision. Change enabled
+state there too, then rerun the feature installer. This updates plugins, not the
+Herdr application itself. Do not copy a live registry or runtime folders into Git.
+Removing a saved entry does not automatically remove installed settings or
+uninstall a plugin.
 
 ## Removing
 
