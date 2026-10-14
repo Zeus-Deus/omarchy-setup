@@ -24,8 +24,23 @@ install -d \
 printf '%s\n' \
   '#!/usr/bin/env bash' \
   'printf "%s\\n" "$*" >> "$OMARCHY_TEST_COMMAND_LOG"' \
+  '[[ "$*" == "default browser" ]] && printf "%s\\n" "${OMARCHY_TEST_DEFAULT_BROWSER:-brave}"' \
+  'exit 0' \
   > "$fixture_bin/omarchy"
 chmod 755 "$fixture_bin/omarchy"
+
+# Omarchy routes links through its own launcher, so the XDG handler is not the browser.
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'printf "%s\\n" omarchy-browser.desktop' \
+  > "$fixture_bin/xdg-settings"
+chmod 755 "$fixture_bin/xdg-settings"
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'exit 0' \
+  > "$fixture_bin/notify-send"
+chmod 755 "$fixture_bin/notify-send"
 
 printf '%s\n' \
   '#!/usr/bin/env bash' \
@@ -96,6 +111,17 @@ cmp "$repo_dir"/dotfiles/common/.local/share/applications/X.desktop "$fixture_ho
 [[ "$(grep -Fxc 'require("hypr.windows")' "$config_home/hypr/hyprland.lua")" -eq 1 ]]
 grep -Fxq 'default browser brave' "$command_log"
 grep -Fxq 'setup security sudoless docker' "$command_log"
+
+# Web apps follow Omarchy's default browser, not the raw XDG link handler.
+: > "$command_log"
+"$fixture_home/.local/bin/brave-profile" --default --webapp https://youtube.com/
+grep -Fxq 'launch webapp https://youtube.com/ --profile-directory=Profile 1' "$command_log"
+"$fixture_home/.local/bin/brave-profile" --default --focus-webapp WhatsApp https://web.whatsapp.com/
+grep -Fxq 'launch or focus webapp WhatsApp https://web.whatsapp.com/ --profile-directory=Profile 1' "$command_log"
+if OMARCHY_TEST_DEFAULT_BROWSER=firefox "$fixture_home/.local/bin/brave-profile" --default --webapp https://youtube.com/ 2>/dev/null; then
+  printf '%s\n' 'Expected a Brave web app to fail when Firefox is the default browser.' >&2
+  exit 1
+fi
 
 : > "$command_log"
 bash "$repo_dir"/install.sh --machine desktop --keyboard us --display high-refresh

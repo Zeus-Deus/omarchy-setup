@@ -18,6 +18,14 @@ fail() {
   exit 1
 }
 
+require_brave_default() {
+  local default_browser
+
+  # Ask Omarchy: its link routing makes the XDG handler omarchy-browser.desktop.
+  default_browser="$(omarchy default browser)" || fail "Omarchy could not report the default browser."
+  [[ "$default_browser" == brave* ]] || fail "Brave must be the Omarchy default browser before launching a Brave web app."
+}
+
 if (( $# == 0 )); then
   usage
   exit 2
@@ -78,8 +86,7 @@ if [[ "${1:-}" == "--webapp" ]]; then
   shift 2
 
   command -v omarchy >/dev/null 2>&1 || fail "The Omarchy CLI is required to launch web apps."
-  readonly default_browser="$(env -u BROWSER xdg-settings get default-web-browser)"
-  [[ "$default_browser" == brave* ]] || fail "Brave must be the Omarchy default browser before launching a Brave web app."
+  require_brave_default
 
   exec omarchy launch webapp \
     "$webapp_url" \
@@ -94,8 +101,7 @@ if [[ "${1:-}" == "--focus-webapp" ]]; then
   shift 3
 
   command -v omarchy >/dev/null 2>&1 || fail "The Omarchy CLI is required to launch web apps."
-  readonly default_browser="$(env -u BROWSER xdg-settings get default-web-browser)"
-  [[ "$default_browser" == brave* ]] || fail "Brave must be the Omarchy default browser before launching a Brave web app."
+  require_brave_default
 
   exec omarchy launch or focus webapp \
     "$window_pattern" \
