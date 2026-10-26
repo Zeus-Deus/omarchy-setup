@@ -36,3 +36,5 @@ omarchy setup security sudoless docker
 ## Optional setup
 
 - [Unity Hub and Editor](docs/setup/unity/README.md)
+- [AirPods audio and microphone](features/airpods/README.md), including the
+  [temporary PipeWire capture patch and verified-removal procedure](features/airpods/pipewire-bluetooth-patch.md).

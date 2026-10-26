@@ -1,6 +1,12 @@
 # AirPods Audio + Mic Fix (Linux / Arch / Omarchy)
 
 > Optional feature. This is not run by the main installer.
+>
+> **Separate capture bug:** these settings do not fix the PipeWire Bluetooth
+> transport failure seen when opening the mic during playback. The official
+> `1:1.6.10-1` package still failed the October 26, 2026 test. Keep the working
+> user-local plugin until a verified official replacement passes. See the
+> [temporary PipeWire patch, rebuild recipe, and retirement procedure](pipewire-bluetooth-patch.md).
 
 A one-shot setup that makes AirPods behave the way they do on macOS:
 
@@ -58,14 +64,15 @@ PipeWire 1.5.81 (Oct 2025) added Apple's proprietary **LC3-24kHz** codec for HFP
 ## Verify after running
 
 ```bash
-# Active codec on the AirPods card (re-run after reconnecting AirPods):
-pactl list cards | grep -A1 -i airpods | grep -i 'Active Profile'
+# Inspect the AirPods card's Active Profile and codec descriptions:
+pactl list cards
 ```
 
-- `headset-head-unit` -> **LC3-24kHz** (best, macOS-equivalent voice codec)
-- `headset-head-unit-msbc` -> **mSBC** at 16 kHz (good)
-- `headset-head-unit-cvsd` -> **CVSD** at 8 kHz (narrowband, sounds bad) - reconnect AirPods to re-negotiate
-- `a2dp-sink` -> **AAC** (high-fidelity playback, no mic active)
+Inspect the codec **description** in `pactl list cards`; profile names vary by
+headset and negotiated codecs. On the AirPods tested on October 26, 2026,
+`headset-head-unit` means **mSBC**, not LC3. `headset-head-unit-cvsd` is narrowband
+CVSD; `a2dp-sink` is the AAC playback profile. Do not force a lower-quality codec
+as a substitute for the [capture patch](pipewire-bluetooth-patch.md).
 
 ## Known caveats
 
