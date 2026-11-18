@@ -6,6 +6,10 @@
 Per-game fixes for Steam games on Proton, kept in the game's own prefix so the
 desktop, other games, and Omarchy's defaults stay untouched.
 
+A game with a saved output always plays there while that device is connected,
+even if it is switched off. With the device unplugged, Wine falls back to the
+desktop default output.
+
 ```bash
 ./proton-prefix.py apply            # apply everything in games.toml
 ./proton-prefix.py apply --dry-run  # report only
@@ -22,6 +26,7 @@ Requires Python 3.11+. Safe to rerun; a matching prefix is left unchanged.
 | Menus ignore the mouse until you switch workspace and back; breaks again after a click or a match | Wine grabs the pointer for a fullscreen window and the game stops tracking it | `set APPID --exe Game.exe --grab-pointer off` |
 | Robotic noise, a loud tone, or silent call audio only while a call and the game run together | Headset dongle behind a USB hub | Hardware: see [USB headset noise](../../docs/troubleshooting/usb-headset-noise/README.md) |
 | Game starts zoomed in | The game is saved as Windowed while a Hyprland rule forces it fullscreen | Set Fullscreen in the game's own settings; leaving fullscreen with `Super+F` makes the game save Windowed again |
+| Infinite Warfare Zombies closes with "Content package is no longer available" | Steam installed Zombies without the Multiplayer component it depends on | Steam: Properties, DLC, tick "Call of Duty: Infinite Warfare - Multiplayer" (about 11 GB) |
 
 None of these were Omarchy bugs. The first two are how Wine and the game
 interact; the fixes are standard Wine settings.
