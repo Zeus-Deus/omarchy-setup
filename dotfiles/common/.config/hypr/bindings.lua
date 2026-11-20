@@ -92,3 +92,45 @@ o.bind("SUPER + SHIFT + code:21", "Bitwarden", { launch = "bitwarden-desktop" })
 
 -- Personal addition; this key is not occupied by Omarchy.
 o.bind("SUPER + CTRL + ALT + X", "Voxtype config", { tui = "voxtype-tui", focus = true })
+
+-- Universal copy/paste for T3 Code. Its embedded terminal treats Ctrl+V as a
+-- literal ^V and Ctrl+C without a selection as an interrupt, while Omarchy
+-- only switches to Ctrl+Shift+C/V for windows tagged "terminal". Ctrl+Insert /
+-- Shift+Insert copy and paste in both T3's terminal and its text fields.
+-- Other windows keep Omarchy's behavior (mirrors default/hypr/bindings/clipboard.lua).
+do
+  local function send_once(mods, key)
+    hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "down" }))
+    hl.timer(function()
+      hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "up" }))
+    end, { timeout = 50, type = "oneshot" })
+  end
+
+  local function active_window_kind()
+    local window = hl.get_active_window()
+    if not window then return "default" end
+    if window.class == "com.t3tools.T3Code" then return "t3" end
+    for _, tag in ipairs(window.tags or {}) do
+      if tag:gsub("%*$", "") == "terminal" then return "terminal" end
+    end
+    return "default"
+  end
+
+  local function clipboard_shortcut(key, insert_mods)
+    return function()
+      local kind = active_window_kind()
+      if kind == "t3" then
+        send_once(insert_mods, "Insert")
+      elseif kind == "terminal" then
+        send_once("CTRL SHIFT", key)
+      else
+        send_once("CTRL", key)
+      end
+    end
+  end
+
+  o.rebind("SUPER + C", "Universal copy", clipboard_shortcut("C", "CTRL"))
+  -- Scripts (e.g. dictation) paste through o.universal_paste, so T3 gets this too.
+  o.universal_paste = clipboard_shortcut("V", "SHIFT")
+  o.rebind("SUPER + V", "Universal paste", o.universal_paste)
+end
